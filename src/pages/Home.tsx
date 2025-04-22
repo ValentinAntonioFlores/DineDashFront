@@ -1,0 +1,86 @@
+import React, { useState } from 'react';
+import HomeInput from '../components/HomeInput.tsx';
+import CategoryCard from '../components/CategoryCardHome.tsx';
+import MapCard from '../components/MapCardHome.tsx';
+import HomePageLayout from '../layouts/HomePageLayout.tsx';
+import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
+
+interface HomeProps {
+    buscarLocales: string;
+}
+
+const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts","Burgers","Burgers", "Tacos", "Desserts","Burgers"];
+const categoriesFavoritos= ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5", "Fav6", "Fav7", "Fav8", "Fav9"];
+
+const HomeForm: React.FC = () => {
+    const [formData, setFormData] = useState<HomeProps>({
+        buscarLocales: '',
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        console.log(formData);
+    };
+
+    const searchForm = (
+        <form onSubmit={handleSubmit}>
+            <HomeInput
+                label="Buscar Locales"
+                name="buscarLocales"
+                type="buscarLocales"
+                value={formData.buscarLocales}
+                onChange={handleChange}
+            />
+        </form>
+    );
+
+    const popularCategories = (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+            {categoriesPopulares.map((category) => (
+                <CategoryCard
+                    key={category}
+                    title={category}
+                    onClick={() => console.log(`Clicked on ${category}`)}
+                />
+            ))}
+        </div>
+    );
+
+    const favoriteCategories = (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+            {categoriesFavoritos.map((category) => (
+                <CategoryCard
+                    key={category}
+                    title={category}
+                    onClick={() => console.log(`Clicked on ${category}`)}
+                />
+            ))}
+        </div>
+    );
+
+    const mapCard = (
+        <MapCard
+            key="map"
+            title="Map"
+            onClick={() => console.log("Clicked on map")}
+        />
+    );
+
+    return (
+        <HomeLayout>
+            <HomePageLayout
+                searchForm={searchForm}
+                popularCategories={popularCategories}
+                mapCard={mapCard}
+                favoriteCategories={favoriteCategories}
+            />
+        </HomeLayout>
+    );
+};
+
+export default HomeForm;
