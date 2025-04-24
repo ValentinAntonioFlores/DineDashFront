@@ -50,6 +50,7 @@ const SignInForm: React.FC = () => {
             console.log("User info stored:", userInfo);
             console.log("Token stored, now navigating to home...");
             navigate('/');
+            window.location.reload();
         } catch (error: any) {
             setError(error.message);
         }
