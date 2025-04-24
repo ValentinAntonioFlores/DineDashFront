@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SignInLayout from "../layouts/SignInLayout.tsx";
 import AuthInput from "../components/AuthInput.tsx";
+import {signIn} from "../utils/Api.ts";
+
 
 interface SignInFormState {
     email: string;
@@ -14,6 +16,8 @@ const SignInForm: React.FC = () => {
         password: '',
     });
 
+    const [error, setError] = useState<string | null>(null);  // To display any login errors
+
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,18 +25,39 @@ const SignInForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(formData);
 
-        // Simulate successful login (replace with real API call)
-        if (formData.email && formData.password) {
-            // Navigate after login
-            navigate('/'); // or wherever your home/dashboard is
-        } else {
+        if (!formData.email || !formData.password) {
             alert("Please fill in both fields.");
+            return;
+        }
+
+        try {
+            const response = await signIn(formData); // response now has token, firstName, etc.
+            console.log("Login API full response:", response);
+
+            const { token, firstName, lastName, email } = response;
+
+
+            // Store the token
+            localStorage.setItem('authToken', token);
+
+            // Store user info from backend
+            const userInfo = { firstName, lastName, email };
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+            console.log("User info stored:", userInfo);
+            console.log("Token stored, now navigating to home...");
+            navigate('/');
+        } catch (error: any) {
+            setError(error.message);
         }
     };
+
+
+
+
 
     return (
         <SignInLayout>

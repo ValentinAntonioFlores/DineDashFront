@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AuthInput from '../components/AuthInput.tsx';
 import UserSignUpLayout from '../layouts/UserSignUpLayout';
 import {signUp} from "../utils/Api.ts";
+
 
 interface SignUpFormState {
     firstname: string;
@@ -22,6 +24,8 @@ const SignUpForm: React.FC = () => {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const navigate = useNavigate();
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -31,7 +35,6 @@ const SignUpForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Ensure that passwords match
         if (formData.password !== formData.confirmPassword) {
             console.error('Passwords do not match!');
             return;
@@ -47,11 +50,20 @@ const SignUpForm: React.FC = () => {
         try {
             const result = await signUp(payload); // Call the API function from api.ts
             console.log('Signup successful!', result);
-            // Optionally, redirect or show a success message
+
+            // Check the response message from the backend
+            if (result.message === 'User registered successfully.') {
+                console.log('Navigating to homepage...');
+                navigate('/'); // Redirect to homepage
+            } else {
+                console.error('Signup failed', result.message);
+            }
         } catch (error) {
             console.error('Error during signup:', error);
         }
     };
+
+
 
     return (
         <UserSignUpLayout>

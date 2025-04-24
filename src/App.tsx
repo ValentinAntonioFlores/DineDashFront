@@ -8,7 +8,6 @@ import RestaurantSignUp from './pages/RestaurantSignUp.tsx';
 import SignUpForm from "./pages/UserSignUp.tsx";
 import SignUpUserRestaurantLayout from "./layouts/SignUpUserRestaurantLayout.tsx";
 import SignInForm from "./pages/SignIn.tsx";
-import RestaurantDashboard from "./RestaurantLayout/RestaurantView.tsx";
 import RestaurantHome from "./pages/RestaurantHome.tsx";
 
 function App() {

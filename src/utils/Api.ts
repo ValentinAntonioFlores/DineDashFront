@@ -1,8 +1,8 @@
-// utils/api.ts
+import axios from 'axios';
 
 export const signUp = async (payload: { firstName: string, lastName: string, email: string, password: string }) => {
     try {
-        const response = await fetch('http://localhost:8080/clientUsers/register', {
+        const response = await fetch('http://localhost:8000/clientUsers/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -21,3 +21,13 @@ export const signUp = async (payload: { firstName: string, lastName: string, ema
         throw error;
     }
 };
+
+
+// In Api.ts
+// utils/Api.ts
+
+export async function signIn(data: { email: string; password: string }) {
+    const response = await axios.post('http://localhost:8000/clientUsers/login', data);
+    return response.data; // This will now include token + name + email
+};
+
