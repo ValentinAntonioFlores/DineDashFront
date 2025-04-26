@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthInput from "../components/AuthInput.tsx";
 import RestaurantSignUpLayout from "../layouts/RestaurantSignUpLayout.tsx";
+import {registerRestaurant, signUpRestaurant} from "../utils/Api.ts";
 
 interface SignUpRestaurantFormState {
-    firstname: string;
-    lastname: string;
+    restaurantName: string;
     email: string;
     password: string;
     confirmPassword: string;
@@ -14,8 +14,7 @@ interface SignUpRestaurantFormState {
 
 const SignUpRestaurantForm: React.FC = () => {
     const [formData, setFormData] = useState<SignUpRestaurantFormState>({
-        firstname: '',
-        lastname: '',
+        restaurantName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -29,36 +28,42 @@ const SignUpRestaurantForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(formData);
 
-        // Simulate successful login (replace with real API call)
-        if (formData.email && formData.password) {
-            // Navigate after login
-            navigate('/restaurantHome'); // or wherever your home/dashboard is
-        } else {
-            alert("Please fill in both fields.");
+        if (formData.password !== formData.confirmPassword) {
+            alert("Passwords do not match.");
+            return;
+        }
+
+        const payload = {
+            restaurantName: formData.restaurantName,
+            email: formData.email,
+            password: formData.password
+        };
+
+        console.log("Submitting registration payload:", payload);
+
+        try {
+            await registerRestaurant(payload);
+            navigate('/restaurantHome');
+        } catch (err) {
+            console.error("Registration failed:", err);
+            alert("Failed to register. Please try again.");
         }
     };
+
+
 
     return (
         <RestaurantSignUpLayout>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex gap-4">
                     <AuthInput
-                        label="First Name"
-                        name="firstname"
-                        value={formData.firstname}
+                        label="Restaurant Name"
+                        name="restaurantName"
+                        value={formData.restaurantName}
                         onChange={handleChange}
                     />
-                    <AuthInput
-                        label="Last Name"
-                        name="lastname"
-                        value={formData.lastname}
-                        onChange={handleChange}
-                    />
-                </div>
                 <AuthInput
                     label="Email"
                     name="email"

@@ -20,6 +20,7 @@ const SignInForm: React.FC = () => {
 
     const navigate = useNavigate();
 
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -37,14 +38,13 @@ const SignInForm: React.FC = () => {
             const response = await signIn(formData); // response now has token, firstName, etc.
             console.log("Login API full response:", response);
 
-            const { token, firstName, lastName, email } = response;
-
+            const { token, firstName, lastName, email, idUsuario } = response;
 
             // Store the token
             localStorage.setItem('authToken', token);
 
-            // Store user info from backend
-            const userInfo = { firstName, lastName, email };
+            // Store user info from backend, now including 'idUsuario'
+            const userInfo = { id: idUsuario, firstName, lastName, email };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             console.log("User info stored:", userInfo);
@@ -55,10 +55,6 @@ const SignInForm: React.FC = () => {
             setError(error.message);
         }
     };
-
-
-
-
 
     return (
         <SignInLayout>

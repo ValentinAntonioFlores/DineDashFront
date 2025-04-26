@@ -13,7 +13,7 @@ const generateEmptyGrid = (): Cell[][] => {
     );
 };
 
-const RestaurantHome: React.FC = () => {
+const RestaurantHomes: React.FC = () => {
     const [grid, setGrid] = useState<Cell[][]>(generateEmptyGrid());
     const [selectedSeats, setSelectedSeats] = useState<number>(2); // Default to 2 seats per table
     const [mode, setMode] = useState<"seat" | "table" | "erase">("seat"); // Current mode (seat, table, erase)
@@ -97,4 +97,4 @@ const RestaurantHome: React.FC = () => {
     );
 };
 
-export default RestaurantHome;
+export default RestaurantHomes;

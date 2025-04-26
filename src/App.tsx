@@ -9,6 +9,9 @@ import SignUpForm from "./pages/UserSignUp.tsx";
 import SignUpUserRestaurantLayout from "./layouts/SignUpUserRestaurantLayout.tsx";
 import SignInForm from "./pages/SignIn.tsx";
 import RestaurantHome from "./pages/RestaurantHome.tsx";
+import UserConfiguration from "./pages/UserConfiguration.tsx";
+import RestaurantHomes from "./pages/RestaurantHome.tsx";
+
 
 function App() {
     return (
@@ -20,7 +23,8 @@ function App() {
                 <Route path="/restaurant-signup" element={<RestaurantSignUp />} />
                 <Route path="/SignUp" element={<SignUpUserRestaurantLayout/>}/>
                 <Route path="/restaurantHome" element={<RestaurantHome />} />
-
+                <Route path="/conf" element={<UserConfiguration />} />
+                <Route path="/restaurant" element={<RestaurantHomes/>} />
             </Routes>
         </BrowserRouter>
     );
