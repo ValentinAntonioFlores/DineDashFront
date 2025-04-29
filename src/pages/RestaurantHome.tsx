@@ -3,12 +3,8 @@ import GridLayout from "../components/GridLayout.tsx";
 import ImageUpload from "../components/ImageUpload.tsx";
 import ReservationsOverview from "../components/ReservationsOverview.tsx";
 import Logout from "../components/Logout.tsx";
-
-interface Table {
-    isTable: boolean;
-    seats: number;
-    reserved: boolean;
-}
+import { fetchGridLayout, saveGridLayout } from "../utils/TableApi.ts";
+import { Table } from "../utils/TableApi";
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "logout">("image");
@@ -18,23 +14,100 @@ const RestaurantHome: React.FC = () => {
         )
     );
     const [selectedSeats, setSelectedSeats] = useState(4);
-    const [mode, setMode] = useState<"seat" | "table" | "erase">("seat");
+    const [mode, setMode] = useState<"table" | "erase">("table");
     const [restaurantImage, setRestaurantImage] = useState<string | null>(null);
-    const [userInfo, setUserInfo] = useState<{ restaurantName: string; email: string } | null>(null);
+    const [userInfo, setUserInfo] = useState<{ id: string; restaurantName: string; email: string } | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
+    const loadGrid = (gridData: any[][]): Table[][] => {
+        const defaultGridSize = 10;
+        const grid = gridData || [];
+
+        // Expand rows if needed
+        while (grid.length < defaultGridSize) {
+            grid.push(new Array(defaultGridSize).fill({ isTable: false, seats: 0, reserved: false }));
+        }
+
+        // Expand columns in each row
+        for (let i = 0; i < grid.length; i++) {
+            while (grid[i].length < defaultGridSize) {
+                grid[i].push({ isTable: false, seats: 0, reserved: false });
+            }
+        }
+
+        // Normalize each cell
+        return grid.map(row =>
+            row.map(cell => ({
+                isTable: cell?.isTable || false,
+                seats: cell?.seats || 0,
+                reserved: cell?.reserved || false,
+            }))
+        );
+    };
+
+    // On mount: load user and grid
     useEffect(() => {
         const storedUserInfo = localStorage.getItem("userInfo");
         if (storedUserInfo) {
-            setUserInfo(JSON.parse(storedUserInfo));
+            const parsed = JSON.parse(storedUserInfo);
+            setUserInfo(parsed);
+
+            const fetchData = async () => {
+                try {
+                    const fetchedGrid = await fetchGridLayout(parsed.id);
+                    console.log("Fetched grid layout from backend:", fetchedGrid);
+                    setGrid(loadGrid(fetchedGrid));
+                } catch (error) {
+                    console.error("Error fetching grid layout:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchData();
+        } else {
+            console.error("User info not found in local storage.");
+            setLoading(false);
         }
     }, []);
 
     const handleLogout = () => {
-        const previousUserInfo = localStorage.getItem("userInfo");
-        console.log("Previous User Info:", previousUserInfo);
+        localStorage.removeItem("userInfo");
+        console.log("User Info Removed");
+    };
 
-        localStorage.setItem("userInfo", "null");
-        console.log("Current User Info:", localStorage.getItem("userInfo"));
+    const saveCurrentGridLayout = async () => {
+        if (!userInfo) {
+            alert("Error: User not logged in. Cannot save layout.");
+            return;
+        }
+        try {
+            await saveGridLayout(userInfo.id, grid);
+            alert("Grid layout saved successfully!");
+        } catch (error) {
+            console.error("Error saving grid layout:", error);
+            alert("Failed to save grid layout.");
+        }
+    };
+
+    const toggleCell = (row: number, col: number) => {
+        setGrid((prevGrid) => {
+            const newGrid = prevGrid.map((r, rowIndex) =>
+                r.map((cell, colIndex) => {
+                    // Prevent toggling reserved cells
+                    if (cell.reserved) return cell;
+
+                    return rowIndex === row && colIndex === col
+                        ? {
+                            ...cell,
+                            isTable: mode === "table",
+                            seats: mode === "table" ? selectedSeats : 0,
+                        }
+                        : cell;
+                })
+            );
+            return newGrid;
+        });
     };
 
     return (
@@ -58,44 +131,54 @@ const RestaurantHome: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 p-8">
                 {selectedSection === "image" && (
-                    <ImageUpload restaurantImage={restaurantImage} onImageChange={(e) => setRestaurantImage(e)} />
-                )}
-                {selectedSection === "layout" && (
-                    <GridLayout
-                        grid={grid}
-                        selectedSeats={selectedSeats}
-                        mode={mode}
-                        toggleCell={(row, col) => setGrid((prev) => {
-                            const newGrid = [...prev.map((r) => [...r])];
-                            const cell = newGrid[row][col];
-                            if (mode === "seat" && cell.isTable) cell.seats = selectedSeats;
-                            else if (mode === "table") {
-                                cell.isTable = true;
-                                cell.seats = selectedSeats;
-                            } else if (mode === "erase") {
-                                cell.isTable = false;
-                                cell.seats = 0;
+                    <ImageUpload
+                        restaurantImage={restaurantImage}
+                        onImageChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = () => setRestaurantImage(reader.result as string);
+                                reader.readAsDataURL(file);
                             }
-                            return newGrid;
-                        })}
-                        setMode={setMode}
-                        setSelectedSeats={setSelectedSeats}
+                        }}
                     />
                 )}
-                {selectedSection === "reservations" && (
-                    <ReservationsOverview grid={grid} toggleReservation={(row, col) => setGrid((prev) => {
-                        const newGrid = [...prev.map((r) => [...r])];
-                        const cell = newGrid[row][col];
-                        if (cell.isTable) cell.reserved = !cell.reserved;
-                        return newGrid;
-                    })} />
+
+                {selectedSection === "layout" && (
+                    <>
+                        {loading ? (
+                            <div>Loading grid layout...</div>
+                        ) : (
+                            <>
+                                <GridLayout
+                                    grid={grid}
+                                    selectedSeats={selectedSeats}
+                                    mode={mode}
+                                    toggleCell={toggleCell}
+                                    setMode={setMode}
+                                    setSelectedSeats={setSelectedSeats}
+                                />
+                                <button
+                                    onClick={saveCurrentGridLayout}
+                                    className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                                >
+                                    Save Grid Layout
+                                </button>
+                            </>
+                        )}
+                    </>
                 )}
+
+                {selectedSection === "reservations" && (
+                    <ReservationsOverview grid={grid} toggleReservation={(row, col) => toggleCell(row, col)} />
+                )}
+
                 {selectedSection === "logout" && (
                     <div className="flex flex-col items-center">
                         <h3 className="text-lg font-bold mb-4">Personal Account</h3>
                         {userInfo && (
                             <div className="mb-4">
-                                <p className="text-sm">Name: {userInfo.restaurantName}</p>
+                                <p className="text-sm">Restaurant Name: {userInfo.restaurantName}</p>
                                 <p className="text-sm">Email: {userInfo.email}</p>
                             </div>
                         )}
