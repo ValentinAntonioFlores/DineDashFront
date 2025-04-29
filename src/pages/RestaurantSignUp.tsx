@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthInput from "../components/AuthInput.tsx";
 import RestaurantSignUpLayout from "../layouts/RestaurantSignUpLayout.tsx";
-import {registerRestaurant, signUpRestaurant} from "../utils/Api.ts";
+import {registerRestaurant, RestaurantSignUp} from "../utils/Api.ts";
 
 interface SignUpRestaurantFormState {
     restaurantName: string;

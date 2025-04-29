@@ -9,10 +9,19 @@ interface HomeProps {
     buscarLocales: string;
 }
 
-const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts","Burgers","Burgers", "Tacos", "Desserts","Burgers"];
-const categoriesFavoritos= ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5", "Fav6", "Fav7", "Fav8", "Fav9"];
+interface SavedRestaurant {
+    name: string;
+    image: string | null;
+}
 
-const HomeForm: React.FC = () => {
+interface Props {
+    savedRestaurants?: SavedRestaurant[];
+}
+
+const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
+const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
+
+const HomeForm: React.FC<Props> = ({ savedRestaurants = [] }) => {
     const [formData, setFormData] = useState<HomeProps>({
         buscarLocales: '',
     });
@@ -32,7 +41,7 @@ const HomeForm: React.FC = () => {
             <HomeInput
                 label="Buscar Locales"
                 name="buscarLocales"
-                type="buscarLocales"
+                type="text"
                 value={formData.buscarLocales}
                 onChange={handleChange}
             />
@@ -71,13 +80,34 @@ const HomeForm: React.FC = () => {
         />
     );
 
+    const savedRestaurantCards = savedRestaurants.length > 0 && (
+        <div className="mt-10">
+            <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+                {savedRestaurants.map((restaurant, index) => (
+                    <CategoryCard
+                        key={index}
+                        title={restaurant.name}
+                        imageUrl={restaurant.image ?? undefined}
+                        onClick={() => console.log(`Clicked on ${restaurant.name}`)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+
     return (
         <HomeLayout>
             <HomePageLayout
                 searchForm={searchForm}
                 popularCategories={popularCategories}
                 mapCard={mapCard}
-                favoriteCategories={favoriteCategories}
+                favoriteCategories={
+                    <>
+                        {favoriteCategories}
+                        {savedRestaurantCards}
+                    </>
+                }
             />
         </HomeLayout>
     );
