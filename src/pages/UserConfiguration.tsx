@@ -4,9 +4,10 @@ import { UserConfigurationLayout } from "../layouts/UserConfigurationLayout.tsx"
 import { useState, useEffect } from "react";
 
 const UserConfiguration: React.FC = () => {
-    const { userData, updateUser } = useAuth();
+    const { userData, updateUser, signOut } = useAuth();
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         message: '',
         password: '',
@@ -14,11 +15,11 @@ const UserConfiguration: React.FC = () => {
     });
 
     useEffect(() => {
-        console.log("User Data:", userData);
         if (!userData) return;
 
         setFormData({
-            name: userData.name,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
             email: userData.email,
             message: '',
             password: '',
@@ -27,12 +28,11 @@ const UserConfiguration: React.FC = () => {
     }, [userData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSave = async (updatedData: typeof formData) => {
-        console.log("Password:", updatedData.password);
-
         let passwordToSend: string | undefined = undefined;
 
         if (updatedData.password || updatedData.confirmPassword) {
@@ -40,17 +40,16 @@ const UserConfiguration: React.FC = () => {
                 alert("Passwords do not match.");
                 return;
             }
-
             if (updatedData.password.length < 6) {
                 alert("Password must be at least 6 characters long.");
                 return;
             }
-
             passwordToSend = updatedData.password;
         }
 
         const dataToSend = {
-            name: updatedData.name,
+            firstName: updatedData.firstName,
+            lastName: updatedData.lastName,
             email: updatedData.email,
             ...(passwordToSend && { password: passwordToSend }),
         };
@@ -58,9 +57,12 @@ const UserConfiguration: React.FC = () => {
         try {
             const result = await updateUser(dataToSend);
             if (result.success) {
-                console.log("User updated successfully!");
                 alert("User updated successfully!");
-                setFormData(updatedData); // Update the state after a successful save
+                setFormData(prev => ({
+                    ...prev,
+                    password: '',
+                    confirmPassword: '',
+                }));
             } else {
                 alert("Failed to update user.");
             }
@@ -70,13 +72,27 @@ const UserConfiguration: React.FC = () => {
         }
     };
 
+    const handleSignOut = () => {
+        signOut();
+        alert("You have logged out successfully.");
+        // Optionally, redirect the user to a public page like the login page
+    };
+
     return (
         <HomeLayout>
             <UserConfigurationLayout
                 formData={formData}
                 onChange={handleChange}
                 onSave={handleSave}
+                userId={userData?.id || ''} // <- pass the id here
             />
+            {/* Add Sign Out Button */}
+            <button
+                onClick={handleSignOut}
+                className="w-full text-white bg-blue-500 hover:bg-blue-600 p-2 rounded mt-4"
+            >
+                Sign Out
+            </button>
         </HomeLayout>
     );
 };

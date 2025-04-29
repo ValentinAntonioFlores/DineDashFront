@@ -11,6 +11,9 @@ import SignInForm from "./pages/SignIn.tsx";
 import RestaurantHome from "./pages/RestaurantHome.tsx";
 import UserConfiguration from "./pages/UserConfiguration.tsx";
 import RestaurantHomes from "./pages/RestaurantHome.tsx";
+import RestaurantDashboard from "./RestaurantLayout/RestaurantView.tsx";
+import TableManagement from "./RestaurantLayout/TableManagement.tsx";
+import UserTableSelection from "./RestaurantLayout/UserTableSelection.tsx";
 
 
 function App() {
@@ -25,6 +28,9 @@ function App() {
                 <Route path="/restaurantHome" element={<RestaurantHome />} />
                 <Route path="/conf" element={<UserConfiguration />} />
                 <Route path="/restaurant" element={<RestaurantHomes/>} />
+                <Route path="restaurantss" element={<RestaurantDashboard />} />
+                <Route path="/tables" element={<TableManagement />} />
+                <Route path="/userTable" element={<UserTableSelection />} />
             </Routes>
         </BrowserRouter>
     );

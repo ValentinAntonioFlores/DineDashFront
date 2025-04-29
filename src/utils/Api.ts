@@ -34,12 +34,15 @@ export async function signIn(data: { email: string; password: string }) {
 
 export const apiUpdateUser = async (
     id: string,
-    data: { firstName: string; lastName: string; email: string; password?: string }
+    data: { firstname: string; lastname: string; email: string; password?: string }
 ) => {
     try {
+        const token = localStorage.getItem('authToken'); // Get the token from localStorage
+
         const response = await axios.put(`http://localhost:8000/clientUsers/${id}`, data, {
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : '', // Add token to headers
             },
         });
 
@@ -60,6 +63,7 @@ export const apiUpdateUser = async (
         throw error;
     }
 };
+
 
 
 export const registerRestaurant = async (payload: {

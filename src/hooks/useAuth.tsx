@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { apiUpdateUser } from '../utils/Api';
+import { useNavigate } from 'react-router-dom'; // <-- import useNavigate
+
+
 
 interface UserData {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
 }
 
 export const useAuth = () => {
     const [userData, setUserData] = useState<UserData | null>(null);
+    const navigate = useNavigate(); // <-- Use navigate hook here
 
     // Load user data from localStorage when the component mounts
     useEffect(() => {
@@ -21,8 +26,9 @@ export const useAuth = () => {
 
 
             setUserData({
-                id: parsed.id, // ✅ Handles both keys
-                name: parsed.firstName + ' ' + parsed.lastName,
+                id: parsed.id,
+                firstName: parsed.firstName,
+                lastName: parsed.lastName,
                 email: parsed.email,
             });
         }
@@ -34,40 +40,27 @@ export const useAuth = () => {
                 return { success: false, error: 'User is not logged in.' };
             }
 
-            // Split name into first and last name
-            const [firstname, apellido] = updatedData.name?.split(' ') || ['', ''];
-
-            // Prepare the payload with the correct mappings for the backend
             const payload: any = {
-                nombre: firstname,  // Map 'firstname' to 'nombre'
-                apellido,           // Map 'lastname' to 'apellido'
-                email: userData.email, // Include email in the payload
+                firstName: updatedData.firstName || userData.firstName,
+                lastName: updatedData.lastName || userData.lastName,
+                email: updatedData.email || userData.email,
             };
 
-            // If the password is provided, include it in the payload
             if (updatedData.password) {
-                payload.contraseña = updatedData.password; // Map 'password' to 'contraseña'
+                payload.password = updatedData.password;
             }
 
-            // Call the API to update user data
-            const updateResult = await apiUpdateUser(userData.id, payload); // Use UUID (userData.id)
+            const updateResult = await apiUpdateUser(userData.id, payload);
 
-            // If the update is successful, update localStorage and state
             if (updateResult) {
-                // Update localStorage with the new user info
-                const updatedUser = {
+                const updatedUser: UserData = {
                     ...userData,
-                    name: `${firstname} ${apellido}`,
+                    firstName: payload.firstName,
+                    lastName: payload.lastName,
+                    email: payload.email,
                 };
 
-                localStorage.setItem('userInfo', JSON.stringify({
-                    id: userData.id, // Save UUID here
-                    firstName: firstname,
-                    lastName: apellido,
-                    email: userData.email,
-                }));
-
-                // Update state with the new user data
+                localStorage.setItem('userInfo', JSON.stringify(updatedUser));
                 setUserData(updatedUser);
 
                 return { success: true };
@@ -83,9 +76,12 @@ export const useAuth = () => {
         }
     };
 
+
+
     const signOut = () => {
         localStorage.removeItem('userInfo');
         setUserData(null);
+        navigate("/signup")
     };
 
     return { userData, updateUser, signOut };

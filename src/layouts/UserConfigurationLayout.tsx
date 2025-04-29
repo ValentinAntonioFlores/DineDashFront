@@ -1,36 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
 import { EditableField } from "../components/EditableField.tsx";
-
+import { useNavigate } from 'react-router-dom'; // <-- import this
 
 type Props = {
     formData: {
-        name: string;
+        firstName: string;
+        lastName: string;
         email: string;
         message: string;
         password: string;
         confirmPassword: string;
-    },
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void,
-    onSave: (updatedData: formData) => void; // <== accept the draftData
+    };
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onSave: (updatedData: Props['formData']) => void;
+    userId: string;
 };
 
-export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, onSave }) => {
+
+export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, onSave, userId }) => {
+    const navigate = useNavigate(); // <-- Add this hook
     const [selectedCard, setSelectedCard] = useState<string>('Profile Settings');
     const [isEditingAll, setIsEditingAll] = useState(false);
-    const [changePassword, setChangePassword] = useState(false); // ✅ FIXED: inside the component
-    const [draftData, setDraftData] = useState(formData);
+    const [changePassword, setChangePassword] = useState(false);
+    const [currentFormData, setCurrentFormData] = useState(formData);
 
     useEffect(() => {
-        setDraftData(formData);
+        setCurrentFormData(formData);
     }, [formData]);
 
+
+    const handleDeleteAccount = async () => {
+        if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('authToken');
+            await fetch(`http://localhost:8000/clientUsers/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+            });
+
+            localStorage.removeItem('authToken'); // clear token
+            alert("Account deleted successfully!");
+            navigate('/signup'); // redirect after delete
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            alert('Failed to delete account. Please try again.');
+        }
+    };
+
+
     const handleSaveAll = async () => {
-        if (!draftData) return;
+        if (!currentFormData) return;
 
         if (changePassword) {
-            const password = draftData.password.trim();
-            const confirmPassword = draftData.confirmPassword.trim();
+            const password = currentFormData.password.trim();
+            const confirmPassword = currentFormData.confirmPassword.trim();
 
             if (password !== confirmPassword) {
                 alert("Passwords do not match.");
@@ -44,9 +73,9 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
         }
 
         try {
-            onSave(formData);
+            onSave(currentFormData);
             setIsEditingAll(false);
-            setChangePassword(false); // Reset checkbox after saving
+            setChangePassword(false);
         } catch (error) {
             console.error("Error updating user:", error);
             alert("There was an error updating your information. Please try again later.");
@@ -54,22 +83,32 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
     };
 
     return (
-        <div className="bg-white min-h-screen flex">
+        <div className="bg-white h-screen flex">
             {/* Sidebar */}
-            <div className="w-[250px] bg-gray-100 p-2 space-y-2">
-                {['Profile Settings', 'Account Info', 'Notifications', 'Privacy'].map((label) => (
-                    <SidebarCard
-                        key={label}
-                        label={label}
-                        onClick={() => setSelectedCard(label)}
-                        selected={selectedCard === label}
-                    />
-                ))}
+            <div className="w-[250px] bg-gray-100 p-4 flex flex-col justify-between h-full">
+                <div className="space-y-2">
+                    {['Profile Settings', 'Account Info', 'Notifications', 'Privacy'].map((label) => (
+                        <SidebarCard
+                            key={label}
+                            label={label}
+                            onClick={() => setSelectedCard(label)}
+                            selected={selectedCard === label}
+                        />
+                    ))}
+                </div>
+
+                <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className="w-full text-white bg-red-500 hover:bg-red-600 p-2 rounded"
+                >
+                    Delete Account
+                </button>
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex items-center justify-center p-8">
-                <div className="bg-gray-100 p-8 rounded shadow-md w-full max-w-[1000px] space-y-6">
+            <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
+                <div className="bg-gray-100 p-6 rounded shadow-md w-full max-w-[1000px] space-y-6">
                     <div className="flex items-center justify-center gap-2">
                         <h2 className="text-2xl font-semibold text-center">{selectedCard}</h2>
                         {selectedCard === 'Profile Settings' && (
@@ -85,24 +124,38 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
 
                     {selectedCard === 'Profile Settings' && (
                         <>
-                            <EditableField
-                                label="Name"
-                                name="name"
-                                value={draftData.name}
-                                onChange={(e) =>
-                                    setDraftData((prev) => ({
-                                        ...prev,
-                                        name: e.target.value,
-                                    }))
-                                }
-                                isEditing={isEditingAll}
-                            />
+                            <div className="flex gap-4">
+                                <EditableField
+                                    label="First Name"
+                                    name="firstName"
+                                    value={currentFormData.firstName || ""}
+                                    onChange={(e) =>
+                                        setCurrentFormData((prev) => ({
+                                            ...prev,
+                                            firstName: e.target.value,
+                                        }))
+                                    }
+                                    isEditing={isEditingAll}
+                                />
+                                <EditableField
+                                    label="Last Name"
+                                    name="lastName"
+                                    value={currentFormData.lastName || ""}
+                                    onChange={(e) =>
+                                        setCurrentFormData((prev) => ({
+                                            ...prev,
+                                            lastName: e.target.value,
+                                        }))
+                                    }
+                                    isEditing={isEditingAll}
+                                />
+                            </div>
                             <EditableField
                                 label="Email"
                                 name="email"
-                                value={draftData.email}
+                                value={currentFormData.email || ""}
                                 onChange={(e) =>
-                                    setDraftData((prev) => ({
+                                    setCurrentFormData((prev) => ({
                                         ...prev,
                                         email: e.target.value,
                                     }))
@@ -126,9 +179,9 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                     <EditableField
                                         label="Password"
                                         name="password"
-                                        value={draftData.password}
+                                        value={currentFormData.password || ""}
                                         onChange={(e) =>
-                                            setDraftData((prev) => ({
+                                            setCurrentFormData((prev) => ({
                                                 ...prev,
                                                 password: e.target.value,
                                             }))
@@ -142,9 +195,9 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                         <EditableField
                                             label="Confirm Password"
                                             name="confirmPassword"
-                                            value={draftData.confirmPassword}
+                                            value={currentFormData.confirmPassword || ""}
                                             onChange={(e) =>
-                                                setDraftData((prev) => ({
+                                                setCurrentFormData((prev) => ({
                                                     ...prev,
                                                     confirmPassword: e.target.value,
                                                 }))
@@ -160,7 +213,7 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                     {selectedCard === 'Account Info' && (
                         <textarea
                             name="message"
-                            value={draftData.message}
+                            value={currentFormData.message || ""}
                             onChange={onChange}
                             placeholder="Message"
                             className="w-full border border-gray-300 p-2 rounded h-24"
@@ -170,21 +223,24 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                     {selectedCard === 'Notifications' && <p>You can manage notification settings here.</p>}
                     {selectedCard === 'Privacy' && <p>Privacy controls go here.</p>}
 
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (isEditingAll) {
-                                handleSaveAll();
-                            }
-                        }}
-                        className={`w-full text-white p-2 rounded transition ${
-                            isEditingAll
-                                ? 'bg-blue-500 hover:bg-blue-600'
-                                : 'bg-red-500 hover:bg-red-600'
-                        }`}
-                    >
-                        {isEditingAll ? 'Confirm' : 'Delete Account'}
-                    </button>
+                    {selectedCard === 'Profile Settings' && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (isEditingAll) {
+                                    handleSaveAll();
+                                }
+                            }}
+                            className={`w-full text-white p-2 rounded transition ${
+                                isEditingAll
+                                    ? 'bg-blue-500 hover:bg-blue-600'
+                                    : 'bg-gray-400 cursor-not-allowed'
+                            }`}
+                            disabled={!isEditingAll}
+                        >
+                            {isEditingAll ? 'Confirm' : 'Confirm'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
