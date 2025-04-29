@@ -1,16 +1,15 @@
 import React from 'react';
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 interface SignUpLayoutProps {
     children: React.ReactNode;
 }
 
 const RestaurantSignUpLayout: React.FC<SignUpLayoutProps> = ({ children }) => {
-
     const navigate = useNavigate();
 
     const handleSignIn = () => {
-        navigate("/signin"); // Navigate to user sign-in page
+        navigate("/RestaurantSignIn"); // Navigate to user sign-in page
     };
 
     return (

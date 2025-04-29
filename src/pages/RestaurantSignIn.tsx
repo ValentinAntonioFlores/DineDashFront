@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SignInLayout from '../layouts/SignInLayout';
 import AuthInput from '../components/AuthInput';
-import { signIn } from '../utils/Api';
+import { signInRestaurantUser } from '../utils/Api';
 
 interface RestaurantSignInFormState {
     email: string;
@@ -33,24 +33,22 @@ const RestaurantSignIn: React.FC = () => {
         }
 
         try {
-            // Pass userType or use a specific endpoint for restaurant users
-            const response = await signIn({ ...formData});
+            const response = await signInRestaurantUser(formData);
             console.log('Login API full response:', response);
 
-            const { token, firstName, lastName, email, idUsuario } = response;
+            const { token, restaurantName, email, idRestaurante } = response;
 
-            // Store the token
-            const userInfo = { id: idUsuario, firstName, lastName, email };
+            // Store token and restaurant info in localStorage
+            const userInfo = { id: idRestaurante, restaurantName, email, token }; // Include token
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-            console.log('User info stored:', userInfo);
-            console.log('Token stored, now navigating to restaurant dashboard...');
-            navigate('/restaurant-dashboard');
-            window.location.reload();
+            console.log('Restaurant info stored:', userInfo);
+            navigate('/restaurantHome'); // No need to reload the page
         } catch (error: any) {
-            setError(error.message);
+            setError(error?.message || 'An unexpected error occurred'); // Improved error handling
         }
     };
+
 
     return (
         <SignInLayout>

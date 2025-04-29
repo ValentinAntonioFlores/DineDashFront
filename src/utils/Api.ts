@@ -28,9 +28,12 @@ export const signUp = async (payload: { firstName: string, lastName: string, ema
 
 export async function signIn(data: { email: string; password: string }) {
     const response = await axios.post('http://localhost:8000/clientUsers/login', data);
-    const [token, userType] = response.data.split("; "); // Assuming response contains token and user type
-    return { token, userType };
+
+    const { token, firstName, lastName, email, idUsuario, userType } = response.data;
+
+    return { token, firstName, lastName, email, idUsuario, userType };
 }
+
 
 
 export const signInRestaurantUser = async (data: { email: string; password: string }) => {
@@ -44,13 +47,24 @@ export const signInRestaurantUser = async (data: { email: string; password: stri
         });
 
         if (!response.ok) {
-            throw new Error('Failed to sign in as Restaurant User');
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to sign in as Restaurant User');
         }
 
         const result = await response.json();
-        return result; // Assuming the backend returns token, user info, etc.
+
+        // Assuming the result contains the token, restaurantName, email, and idRestaurante
+        if (!result.token || !result.restaurantName || !result.email || !result.idRestaurante) {
+            throw new Error('Invalid response structure from backend');
+        }
+
+        return result; // Return the result which contains token, restaurant info, etc.
     } catch (error) {
-        console.error('Error during restaurant user sign-in:', error);
+        if (error instanceof Error) {
+            console.error('Error during restaurant user sign-in:', error.message);
+        } else {
+            console.error('Unknown error during restaurant user sign-in:', error);
+        }
         throw error;
     }
 };
@@ -90,30 +104,30 @@ export const apiUpdateUser = async (
 
 
 
-export const registerRestaurant = async (payload: {
-    restaurantName: string;
-    email: string;
-    password: string;
-}) => {
+// utils/Api.ts
+export const signUpRestaurant = async (payload: { restaurantName: string, email: string, password: string }) => {
     try {
-        const response = await fetch("http://localhost:8000/restaurantUsers/register", {
-            method: "POST",
+        const response = await fetch('http://localhost:8000/restaurantUsers/register', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-            throw new Error("Failed to register restaurant");
+            const result = await response.json();
+            throw new Error(result.message);  // Throw error with the message from the backend
         }
 
-        return await response.text(); // or .json() if your backend returns a JSON response
+        const result = await response.json();
+        return result; // Assuming your backend returns the created restaurant data or a success message
     } catch (error) {
-        console.error("Registration error:", error);
-        throw error;
+        console.error('Error signing up:', error);
+        throw error;  // Ensure the error is thrown
     }
 };
+
 
 
 

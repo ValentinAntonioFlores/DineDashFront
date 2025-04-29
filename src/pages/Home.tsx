@@ -4,7 +4,7 @@ import CategoryCard from '../components/CategoryCardHome.tsx';
 import MapCard from '../components/MapCardHome.tsx';
 import HomePageLayout from '../layouts/HomePageLayout.tsx';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
-import { fetchRestaurants} from "../utils/RestaurantApi.ts";
+import { fetchRestaurants } from "../utils/RestaurantApi.ts";
 
 
 interface HomeProps {
@@ -93,21 +93,22 @@ const HomeForm: React.FC = () => {
         />
     );
 
-    const savedRestaurantCards = savedRestaurants.length > 0 && (
-        <div className="mt-10">
-            <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-                {savedRestaurants.map((restaurant, index) => (
-                    <CategoryCard
-                        key={index}
-                        title={restaurant.name}
-                        imageUrl={restaurant.image ?? undefined}
-                        onClick={() => console.log(`Clicked on ${restaurant.name}`)}
-                    />
-                ))}
-            </div>
-        </div>
-    );
+    // Temporarily removed savedRestaurantCards section
+    // const savedRestaurantCards = savedRestaurants.length > 0 && (
+    //     <div className="mt-10">
+    //         <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
+    //         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+    //             {savedRestaurants.map((restaurant, index) => (
+    //                 <CategoryCard
+    //                     key={index}
+    //                     title={restaurant.name}
+    //                     imageUrl={restaurant.image ?? undefined}
+    //                     onClick={() => console.log(`Clicked on ${restaurant.name}`)}
+    //                 />
+    //             ))}
+    //         </div>
+    //     </div>
+    // );
 
     return (
         <HomeLayout>
@@ -118,7 +119,7 @@ const HomeForm: React.FC = () => {
                 favoriteCategories={
                     <>
                         {favoriteCategories}
-                        {savedRestaurantCards}
+                        {/* {savedRestaurantCards} */}
                     </>
                 }
             />

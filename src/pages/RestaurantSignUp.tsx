@@ -1,26 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthInput from "../components/AuthInput.tsx";
-import RestaurantSignUpLayout from "../layouts/RestaurantSignUpLayout.tsx";
-import {registerRestaurant, RestaurantSignUp} from "../utils/Api.ts";
+import { signUpRestaurant } from "../utils/Api.ts";
+import AuthInput from '../components/AuthInput.tsx';
+import RestaurantSignUpLayout from '../layouts/RestaurantSignUpLayout';
 
-interface SignUpRestaurantFormState {
+interface SignUpFormState {
     restaurantName: string;
     email: string;
     password: string;
     confirmPassword: string;
-    direccion: string;
 }
 
 const SignUpRestaurantForm: React.FC = () => {
-    const [formData, setFormData] = useState<SignUpRestaurantFormState>({
+    const [formData, setFormData] = useState<SignUpFormState>({
         restaurantName: '',
         email: '',
         password: '',
         confirmPassword: '',
-        direccion: ''
     });
 
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +32,7 @@ const SignUpRestaurantForm: React.FC = () => {
         e.preventDefault();
 
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match.");
+            console.error('Passwords do not match!');
             return;
         }
 
@@ -42,28 +42,31 @@ const SignUpRestaurantForm: React.FC = () => {
             password: formData.password
         };
 
-        console.log("Submitting registration payload:", payload);
-
         try {
-            await registerRestaurant(payload);
-            navigate('/restaurantHome');
-        } catch (err) {
-            console.error("Registration failed:", err);
-            alert("Failed to register. Please try again.");
+            const result = await signUpRestaurant(payload);
+
+            // Check the response message from the backend
+            if (result.message === 'Restaurant registered successfully.') {
+                console.log('Signup successful!');
+                navigate('/restaurantHome'); // Redirect to the restaurant dashboard
+            } else {
+                console.error('Signup failed', result.message);
+            }
+        } catch (error) {
+            console.error('Error during signup:', error);
+            alert(error.message);  // Show an alert with the error message
         }
     };
 
-
-
     return (
         <RestaurantSignUpLayout>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                    <AuthInput
-                        label="Restaurant Name"
-                        name="restaurantName"
-                        value={formData.restaurantName}
-                        onChange={handleChange}
-                    />
+            <form onSubmit={handleSubmit} className="w-full p-8 space-y-4">
+                <AuthInput
+                    label="Restaurant Name"
+                    name="restaurantName"
+                    value={formData.restaurantName}
+                    onChange={handleChange}
+                />
                 <AuthInput
                     label="Email"
                     name="email"
@@ -71,27 +74,39 @@ const SignUpRestaurantForm: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                 />
-                <AuthInput
-                    label="Direccion"
-                    name="direccion"
-                    type="text"
-                    value={formData.direccion}
-                    onChange={handleChange}
-                />
-                <AuthInput
-                    label="Password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                />
-                <AuthInput
-                    label="Confirm Password"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                />
+
+                <div className="relative">
+                    <AuthInput
+                        label="Password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={handleChange}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(prev => !prev)}
+                        className="absolute right-2 top-9 text-sm text-blue-600"
+                    >
+                        {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                </div>
+                <div className="relative">
+                    <AuthInput
+                        label="Confirm Password"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(prev => !prev)}
+                        className="absolute right-2 top-9 text-sm text-blue-600"
+                    >
+                        {showConfirmPassword ? 'Hide' : 'Show'}
+                    </button>
+                </div>
                 <button
                     type="submit"
                     className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-full w-full"
