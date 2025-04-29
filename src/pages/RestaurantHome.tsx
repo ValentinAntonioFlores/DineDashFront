@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import HomeForm from "./Home.tsx";
+import { saveRestaurant} from "../utils/RestaurantApi.ts";
+import { createTable} from "../utils/TableApi.ts";
 
 const GRID_SIZE = 10;
 
@@ -19,13 +20,55 @@ const RestaurantHomes: React.FC<{ restaurantName: string }> = ({ restaurantName 
     const [selectedSeats, setSelectedSeats] = useState<number>(2);
     const [mode, setMode] = useState<"seat" | "table" | "erase">("seat");
     const [restaurantImage, setRestaurantImage] = useState<string | null>(null);
-    const [savedData, setSavedData] = useState<{ name: string; image: string | null } | null>(null);
-    const [formVisible, setFormVisible] = useState(false); // To manage visibility of HomeForm
 
-    const handleSave = () => {
-        setSavedData({ name: restaurantName, image: restaurantImage });
-        setFormVisible(true); // Only show HomeForm after saving data
+    const handleSave = async () => {
+        if (!restaurantName) {
+            alert("Please enter a restaurant name");
+            return;
+        }
+
+        try {
+            const savedRestaurant = await saveRestaurant({
+                name: restaurantName,
+                image: restaurantImage,
+                gridLayout: grid,
+            });
+
+            const restaurantId = savedRestaurant.id;  // ← get the restaurant ID
+
+            // Now, create tables from the grid
+            const tablePromises = [];
+
+            for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
+                for (let colIndex = 0; colIndex < grid[rowIndex].length; colIndex++) {
+                    const cell = grid[rowIndex][colIndex];
+                    if (cell.isTable) {
+                        const tableDTO = {
+                            positionX: colIndex,
+                            positionY: rowIndex,
+                            capacity: cell.seats,
+                            isAvailable: true, // Assuming the tables are available by default
+                        };
+
+                        tablePromises.push(
+                            createTable(restaurantId, {
+                                restaurantId,
+                                tableDTO, // Sending tableDTO as expected by the backend
+                            })
+                        );
+                    }
+                }
+            }
+
+            await Promise.all(tablePromises); // Wait for all table creations
+
+            alert("Restaurant and tables saved successfully!");
+        } catch (error) {
+            console.error(error);
+            alert("Error saving restaurant or tables");
+        }
     };
+
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -154,12 +197,6 @@ const RestaurantHomes: React.FC<{ restaurantName: string }> = ({ restaurantName 
                 </button>
             </div>
 
-            {/* Only show HomeForm if savedData is available */}
-            {formVisible && savedData && (
-                <div className="mt-12">
-                    <HomeForm savedRestaurants={[savedData]} />
-                </div>
-            )}
         </div>
     );
 };

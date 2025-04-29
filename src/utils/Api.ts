@@ -28,8 +28,10 @@ export const signUp = async (payload: { firstName: string, lastName: string, ema
 
 export async function signIn(data: { email: string; password: string }) {
     const response = await axios.post('http://localhost:8000/clientUsers/login', data);
-    return response.data; // This will now include token + name + email
-};
+    const [token, userType] = response.data.split("; "); // Assuming response contains token and user type
+    return { token, userType };
+}
+
 
 
 export const apiUpdateUser = async (

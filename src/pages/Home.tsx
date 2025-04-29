@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HomeInput from '../components/HomeInput.tsx';
 import CategoryCard from '../components/CategoryCardHome.tsx';
 import MapCard from '../components/MapCardHome.tsx';
 import HomePageLayout from '../layouts/HomePageLayout.tsx';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
+import { fetchRestaurants} from "../utils/RestaurantApi.ts";
+
 
 interface HomeProps {
     buscarLocales: string;
@@ -14,17 +16,28 @@ interface SavedRestaurant {
     image: string | null;
 }
 
-interface Props {
-    savedRestaurants?: SavedRestaurant[];
-}
-
 const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
 const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
 
-const HomeForm: React.FC<Props> = ({ savedRestaurants = [] }) => {
+const HomeForm: React.FC = () => {
     const [formData, setFormData] = useState<HomeProps>({
         buscarLocales: '',
     });
+
+    const [savedRestaurants, setSavedRestaurants] = useState<SavedRestaurant[]>([]); // ✅
+
+    useEffect(() => {
+        const loadRestaurants = async () => {
+            try {
+                const data = await fetchRestaurants();
+                setSavedRestaurants(data);
+            } catch (error) {
+                console.error("Failed to fetch restaurants:", error);
+            }
+        };
+
+        loadRestaurants();
+    }, []); // ✅ load once on mount
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
