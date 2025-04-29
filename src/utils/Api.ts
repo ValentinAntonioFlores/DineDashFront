@@ -33,6 +33,28 @@ export async function signIn(data: { email: string; password: string }) {
 }
 
 
+export const signInRestaurantUser = async (data: { email: string; password: string }) => {
+    try {
+        const response = await fetch('http://localhost:8000/restaurantUsers/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to sign in as Restaurant User');
+        }
+
+        const result = await response.json();
+        return result; // Assuming the backend returns token, user info, etc.
+    } catch (error) {
+        console.error('Error during restaurant user sign-in:', error);
+        throw error;
+    }
+};
+
 
 export const apiUpdateUser = async (
     id: string,
