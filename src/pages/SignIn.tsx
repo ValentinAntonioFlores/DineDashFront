@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SignInLayout from "../layouts/SignInLayout.tsx";
 import AuthInput from "../components/AuthInput.tsx";
-import {signIn} from "../utils/Api.ts";
-
+import { signIn } from "../utils/Api.ts";
 
 interface SignInFormState {
     email: string;
@@ -20,7 +19,6 @@ const SignInForm: React.FC = () => {
 
     const navigate = useNavigate();
 
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -35,26 +33,31 @@ const SignInForm: React.FC = () => {
         }
 
         try {
-            const response = await signIn(formData); // response now has token, firstName, etc.
+            const response = await signIn(formData); // response now has token and user type
             console.log("Login API full response:", response);
 
-            const { token, firstName, lastName, email, idUsuario } = response;
+            const { token, firstName, lastName, email, idUsuario, userType } = response;  // Assuming userType is included in the response
 
-            // Store the token
+            // Store the token and user info
             localStorage.setItem('authToken', token);
-
-            // Store user info from backend, now including 'idUsuario'
-            const userInfo = { id: idUsuario, firstName, lastName, email };
+            const userInfo = { id: idUsuario, firstName, lastName, email, userType };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             console.log("User info stored:", userInfo);
-            console.log("Token stored, now navigating to home...");
-            navigate('/');
+
+            // Redirect based on user type
+            if (userType === 'restaurant') {
+                navigate('/restauranthome');
+            } else {
+                navigate('/');
+            }
+
             window.location.reload();
         } catch (error: any) {
             setError(error.message);
         }
     };
+
 
     return (
         <SignInLayout>

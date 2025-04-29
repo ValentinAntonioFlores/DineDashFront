@@ -1,21 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HomeInput from '../components/HomeInput.tsx';
 import CategoryCard from '../components/CategoryCardHome.tsx';
 import MapCard from '../components/MapCardHome.tsx';
 import HomePageLayout from '../layouts/HomePageLayout.tsx';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
+import { fetchRestaurants} from "../utils/RestaurantApi.ts";
+
 
 interface HomeProps {
     buscarLocales: string;
 }
 
-const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts","Burgers","Burgers", "Tacos", "Desserts","Burgers"];
-const categoriesFavoritos= ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5", "Fav6", "Fav7", "Fav8", "Fav9"];
+interface SavedRestaurant {
+    name: string;
+    image: string | null;
+}
+
+const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
+const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
 
 const HomeForm: React.FC = () => {
     const [formData, setFormData] = useState<HomeProps>({
         buscarLocales: '',
     });
+
+    const [savedRestaurants, setSavedRestaurants] = useState<SavedRestaurant[]>([]); // ✅
+
+    useEffect(() => {
+        const loadRestaurants = async () => {
+            try {
+                const data = await fetchRestaurants();
+                setSavedRestaurants(data);
+            } catch (error) {
+                console.error("Failed to fetch restaurants:", error);
+            }
+        };
+
+        loadRestaurants();
+    }, []); // ✅ load once on mount
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -32,7 +54,7 @@ const HomeForm: React.FC = () => {
             <HomeInput
                 label="Buscar Locales"
                 name="buscarLocales"
-                type="buscarLocales"
+                type="text"
                 value={formData.buscarLocales}
                 onChange={handleChange}
             />
@@ -71,13 +93,34 @@ const HomeForm: React.FC = () => {
         />
     );
 
+    const savedRestaurantCards = savedRestaurants.length > 0 && (
+        <div className="mt-10">
+            <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+                {savedRestaurants.map((restaurant, index) => (
+                    <CategoryCard
+                        key={index}
+                        title={restaurant.name}
+                        imageUrl={restaurant.image ?? undefined}
+                        onClick={() => console.log(`Clicked on ${restaurant.name}`)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+
     return (
         <HomeLayout>
             <HomePageLayout
                 searchForm={searchForm}
                 popularCategories={popularCategories}
                 mapCard={mapCard}
-                favoriteCategories={favoriteCategories}
+                favoriteCategories={
+                    <>
+                        {favoriteCategories}
+                        {savedRestaurantCards}
+                    </>
+                }
             />
         </HomeLayout>
     );
