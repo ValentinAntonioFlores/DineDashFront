@@ -10,7 +10,6 @@ interface SignUpInputProps {
 }
 
 // @ts-ignore
-// @ts-ignore
 const SignUpInput: React.FC<SignUpInputProps> = ({
                                                      label,
                                                      name,
