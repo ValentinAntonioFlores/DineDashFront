@@ -14,6 +14,7 @@ import RestaurantHomes from "./pages/RestaurantHome.tsx";
 import RestaurantDashboard from "./RestaurantLayout/RestaurantView.tsx";
 import TableManagement from "./RestaurantLayout/TableManagement.tsx";
 import UserTableSelection from "./RestaurantLayout/UserTableSelection.tsx";
+import RestaurantConfig from "./pages/RestaurantConfig.tsx";
 
 
 function App() {
