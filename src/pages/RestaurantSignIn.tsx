@@ -43,6 +43,7 @@ const RestaurantSignIn: React.FC = () => {
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             console.log('Restaurant info stored:', userInfo);
+
             navigate('/restaurantHome'); // No need to reload the page
         } catch (error: any) {
             setError(error?.message || 'An unexpected error occurred'); // Improved error handling

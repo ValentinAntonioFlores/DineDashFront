@@ -38,27 +38,28 @@ export async function signIn(data: { email: string; password: string }) {
 
 export const signInRestaurantUser = async (data: { email: string; password: string }) => {
     try {
-        const response = await fetch('http://localhost:8000/restaurantUsers/login', {
-            method: 'POST',
+        // Make the login request using axios
+        const response = await axios.post('http://localhost:8000/restaurantUsers/login', data, {
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            }
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to sign in as Restaurant User');
-        }
+        const { token, restaurantName, email, idRestaurante } = response.data;
 
-        const result = await response.json();
-
-        // Assuming the result contains the token, restaurantName, email, and idRestaurante
-        if (!result.token || !result.restaurantName || !result.email || !result.idRestaurante) {
+        // Check if the response contains necessary data
+        if (!token || !restaurantName || !email || !idRestaurante) {
             throw new Error('Invalid response structure from backend');
         }
 
-        return result; // Return the result which contains token, restaurant info, etc.
+        // Store the token in localStorage
+        const userInfo = { id: idRestaurante, restaurantName, email, token };
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+        // Store token in axios default headers for subsequent requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        return { token, restaurantName, email, idRestaurante }; // Return the user data
     } catch (error) {
         if (error instanceof Error) {
             console.error('Error during restaurant user sign-in:', error.message);

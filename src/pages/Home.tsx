@@ -5,6 +5,8 @@ import MapCard from '../components/MapCardHome.tsx';
 import HomePageLayout from '../layouts/HomePageLayout.tsx';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
 import { fetchRestaurants } from "../utils/RestaurantApi.ts";
+import { useNavigate } from "react-router-dom";
+
 
 
 interface HomeProps {
@@ -12,6 +14,7 @@ interface HomeProps {
 }
 
 interface SavedRestaurant {
+    id: string;
     name: string;
     image: string | null;
 }
@@ -20,6 +23,8 @@ const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
 const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
 
 const HomeForm: React.FC = () => {
+    const navigate = useNavigate();
+
     const [formData, setFormData] = useState<HomeProps>({
         buscarLocales: '',
     });
@@ -93,22 +98,21 @@ const HomeForm: React.FC = () => {
         />
     );
 
-    // Temporarily removed savedRestaurantCards section
-    // const savedRestaurantCards = savedRestaurants.length > 0 && (
-    //     <div className="mt-10">
-    //         <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
-    //         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-    //             {savedRestaurants.map((restaurant, index) => (
-    //                 <CategoryCard
-    //                     key={index}
-    //                     title={restaurant.name}
-    //                     imageUrl={restaurant.image ?? undefined}
-    //                     onClick={() => console.log(`Clicked on ${restaurant.name}`)}
-    //                 />
-    //             ))}
-    //         </div>
-    //     </div>
-    // );
+    const savedRestaurantCards = savedRestaurants.length > 0 && (
+         <div className="mt-10">
+             <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
+             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+                 {savedRestaurants.map((restaurant, index) => (
+                     <CategoryCard
+                         key={index}
+                         title={restaurant.name}
+                         imageUrl={restaurant.image ?? undefined}
+                         onClick={() => navigate(`/restaurant/${restaurant.id}`)}
+                     />
+                 ))}
+             </div>
+         </div>
+     );
 
     return (
         <HomeLayout>
@@ -119,7 +123,7 @@ const HomeForm: React.FC = () => {
                 favoriteCategories={
                     <>
                         {favoriteCategories}
-                        {/* {savedRestaurantCards} */}
+                        { {savedRestaurantCards} }
                     </>
                 }
             />

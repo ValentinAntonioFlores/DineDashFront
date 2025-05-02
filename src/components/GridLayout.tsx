@@ -10,8 +10,7 @@ interface GridLayoutProps {
 }
 
 const GridLayout: React.FC<GridLayoutProps> = ({
-                                                   grid,
-                                                   selectedSeats,
+                                                   grid, selectedSeats,
                                                    mode,
                                                    toggleCell,
                                                    setMode,

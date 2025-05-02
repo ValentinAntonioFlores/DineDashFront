@@ -5,6 +5,7 @@ import ReservationsOverview from "../components/ReservationsOverview.tsx";
 import Logout from "../components/Logout.tsx";
 import { fetchGridLayout, saveGridLayout } from "../utils/TableApi.ts";
 import { Table } from "../utils/TableApi";
+import {saveRestaurant} from "../utils/RestaurantApi.ts";
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "logout">("image");
@@ -90,6 +91,29 @@ const RestaurantHome: React.FC = () => {
         }
     };
 
+    const saveRestaurantImage = async () => {
+        if (!userInfo || !restaurantImage) {
+            console.error("Error: No user info or image to save.");
+            return;
+        }
+
+        try {
+            console.log("Saving image for restaurant:", userInfo.restaurantName);
+            console.log("Image data:", restaurantImage); // Log the image data to confirm
+
+            const response = await saveRestaurant({
+                name: userInfo.restaurantName,
+                image: restaurantImage,
+            });
+
+            console.log("Image save response:", response); // Log the response from the API
+            alert("Image saved successfully!");
+        } catch (err) {
+            console.error("Error saving image", err);
+            alert("Failed to save image");
+        }
+    };
+
     const toggleCell = (row: number, col: number) => {
         setGrid((prevGrid) => {
             const newGrid = prevGrid.map((r, rowIndex) =>
@@ -131,17 +155,25 @@ const RestaurantHome: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 p-8">
                 {selectedSection === "image" && (
-                    <ImageUpload
-                        restaurantImage={restaurantImage}
-                        onImageChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                const reader = new FileReader();
-                                reader.onload = () => setRestaurantImage(reader.result as string);
-                                reader.readAsDataURL(file);
-                            }
-                        }}
-                    />
+                    <>
+                        <ImageUpload
+                            restaurantImage={restaurantImage}
+                            onImageChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => setRestaurantImage(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={saveRestaurantImage}
+                            className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
+                        >
+                            Save Image
+                        </button>
+                    </>
                 )}
 
                 {selectedSection === "layout" && (
