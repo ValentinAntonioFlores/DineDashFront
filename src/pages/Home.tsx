@@ -35,14 +35,16 @@ const HomeForm: React.FC = () => {
         const loadRestaurants = async () => {
             try {
                 const data = await fetchRestaurants();
-                setSavedRestaurants(data);
+                console.log("Fetched restaurant data:", data); // 🔍 inspect the shape
+                // Adjust based on what you see in the console:
+                setSavedRestaurants(Array.isArray(data) ? data : data.restaurants);
             } catch (error) {
                 console.error("Failed to fetch restaurants:", error);
             }
         };
 
         loadRestaurants();
-    }, []); // ✅ load once on mount
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -123,7 +125,7 @@ const HomeForm: React.FC = () => {
                 favoriteCategories={
                     <>
                         {favoriteCategories}
-                        { {savedRestaurantCards} }
+                        {savedRestaurantCards}
                     </>
                 }
             />

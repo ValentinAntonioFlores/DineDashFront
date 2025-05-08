@@ -36,10 +36,10 @@ const RestaurantSignIn: React.FC = () => {
             const response = await signInRestaurantUser(formData);
             console.log('Login API full response:', response);
 
-            const { token, restaurantName, email, idRestaurante } = response;
+            const { token, restaurantName, email, idRestaurante, imageBase64 } = response;
 
             // Store token and restaurant info in localStorage
-            const userInfo = { id: idRestaurante, restaurantName, email, token }; // Include token
+            const userInfo = { id: idRestaurante, restaurantName, email, token, imageBase64 }; // Include token
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             console.log('Restaurant info stored:', userInfo);

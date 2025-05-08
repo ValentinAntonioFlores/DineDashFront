@@ -3,11 +3,11 @@ import axios from 'axios';
 const BASE_URL = "http://localhost:8000"; // Spring Boot backend
 
 // Upload restaurant image
-export const uploadRestaurantImage = async (restaurantId: string, imageBase64: string) => {
+export const uploadRestaurantImage = async (idRestaurante: string, imageBase64: string) => {
     try {
         const response = await axios.post(
-            `${BASE_URL}/restaurantUsers/${restaurantId}/image`,
-            { imagenBase64: imageBase64 },
+            `${BASE_URL}/restaurantUsers/${idRestaurante}/image`,
+            { imageBase64: imageBase64},
             { headers: { 'Content-Type': 'application/json' } }
         );
         console.log("Image uploaded:", response.data);
@@ -34,8 +34,26 @@ export const saveRestaurant = async (restaurantData: {
     return { message: "Restaurant saved successfully." };
 };
 
-// Fetch restaurants (just as before)
-export const fetchRestaurants = async () => {
-    const response = await axios.get(`${BASE_URL}/api/restaurants`);
+// Fetch restaurants (adjusted to match working endpoint)
+export async function fetchRestaurants() {
+    const token = localStorage.getItem("token"); // adjust if stored elsewhere
+
+    const response = await axios.get("http://localhost:8000/restaurantUsers", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
     return response.data;
+}
+
+// Fetch a specific restaurant by ID
+export const getRestaurant = async (id: string) => {
+    try {
+        const response = await axios.get(`${BASE_URL}/restaurantUsers/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching restaurant:", error);
+        throw error;
+    }
 };

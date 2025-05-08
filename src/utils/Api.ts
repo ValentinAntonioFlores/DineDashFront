@@ -45,7 +45,7 @@ export const signInRestaurantUser = async (data: { email: string; password: stri
             }
         });
 
-        const { token, restaurantName, email, idRestaurante } = response.data;
+        const { token, restaurantName, email, idRestaurante, imageBase64 } = response.data;
 
         // Check if the response contains necessary data
         if (!token || !restaurantName || !email || !idRestaurante) {
@@ -59,7 +59,7 @@ export const signInRestaurantUser = async (data: { email: string; password: stri
         // Store token in axios default headers for subsequent requests
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        return { token, restaurantName, email, idRestaurante }; // Return the user data
+        return { token, restaurantName, email, idRestaurante, imageBase64 }; // Return the user data
     } catch (error) {
         if (error instanceof Error) {
             console.error('Error during restaurant user sign-in:', error.message);

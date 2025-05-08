@@ -5,7 +5,7 @@ import ReservationsOverview from "../components/ReservationsOverview.tsx";
 import Logout from "../components/Logout.tsx";
 import { fetchGridLayout, saveGridLayout } from "../utils/TableApi.ts";
 import { Table } from "../utils/TableApi";
-import {saveRestaurant} from "../utils/RestaurantApi.ts";
+import {getRestaurant, saveRestaurant} from "../utils/RestaurantApi.ts";
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "logout">("image");
@@ -56,10 +56,15 @@ const RestaurantHome: React.FC = () => {
             const fetchData = async () => {
                 try {
                     const fetchedGrid = await fetchGridLayout(parsed.id);
-                    console.log("Fetched grid layout from backend:", fetchedGrid);
                     setGrid(loadGrid(fetchedGrid));
+
+                    // 🔥 Fetch restaurant info (including image)
+                    const restaurantDetails = await getRestaurant(parsed.id);
+                    if (restaurantDetails.imageBase64) {
+                        setRestaurantImage(restaurantDetails.imageBase64);
+                    }
                 } catch (error) {
-                    console.error("Error fetching grid layout:", error);
+                    console.error("Error fetching data:", error);
                 } finally {
                     setLoading(false);
                 }
@@ -102,7 +107,7 @@ const RestaurantHome: React.FC = () => {
             console.log("Image data:", restaurantImage); // Log the image data to confirm
 
             const response = await saveRestaurant({
-                name: userInfo.restaurantName,
+                id: userInfo.id,
                 image: restaurantImage,
             });
 
