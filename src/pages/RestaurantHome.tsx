@@ -72,6 +72,7 @@ const RestaurantHome: React.FC = () => {
     }, []);
 
     const handleLogout = () => {
+        localStorage.removeItem("authToken");
         localStorage.removeItem("userInfo");
         console.log("User Info Removed");
     };

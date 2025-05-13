@@ -14,6 +14,18 @@ const RestaurantSignIn: React.FC = () => {
         email: '',
         password: '',
     });
+    // si hay token que me redirija a restaurantHome
+    if(localStorage.getItem("authToken")) {
+        const userInfo = localStorage.getItem("userInfo");
+        if (userInfo) {
+            const { userType } = JSON.parse(userInfo);
+            if (userType === 'restaurant') {
+                window.location.href = '/restaurantHome';
+            } else {
+                window.location.href = '/home';
+            }
+        }
+    }
 
     const [error, setError] = useState<string | null>(null);
 
@@ -36,10 +48,12 @@ const RestaurantSignIn: React.FC = () => {
             const response = await signInRestaurantUser(formData);
             console.log('Login API full response:', response);
 
-            const { token, restaurantName, email, idRestaurante } = response;
+            const { token, restaurantName, email, idRestaurante, userType } = response;
 
+            // Store the token and user info
+            localStorage.setItem('authToken', token);
             // Store token and restaurant info in localStorage
-            const userInfo = { id: idRestaurante, restaurantName, email, token }; // Include token
+            const userInfo = { id: idRestaurante, restaurantName, email, token, userType }; // Include token
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             console.log('Restaurant info stored:', userInfo);

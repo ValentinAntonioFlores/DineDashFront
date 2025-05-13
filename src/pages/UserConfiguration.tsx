@@ -74,6 +74,7 @@ const UserConfiguration: React.FC = () => {
 
     const handleSignOut = () => {
         signOut();
+        localStorage.removeItem("userInfo");
         alert("You have logged out successfully.");
         // Optionally, redirect the user to a public page like the login page
     };

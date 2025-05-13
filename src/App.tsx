@@ -1,38 +1,37 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-import './App.css';
-import './index.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Home from './pages/Home.tsx';
 import RestaurantSignUp from './pages/RestaurantSignUp.tsx';
-import SignUpForm from "./pages/UserSignUp.tsx";
-import SignUpUserRestaurantLayout from "./layouts/SignUpUserRestaurantLayout.tsx";
-import SignInForm from "./pages/SignIn.tsx";
-import RestaurantHome from "./pages/RestaurantHome.tsx";
-import UserConfiguration from "./pages/UserConfiguration.tsx";
-import RestaurantHomes from "./pages/RestaurantHome.tsx";
-import RestaurantDashboard from "./RestaurantLayout/RestaurantView.tsx";
-import TableManagement from "./RestaurantLayout/TableManagement.tsx";
-import UserTableSelection from "./RestaurantLayout/UserTableSelection.tsx";
-import RestaurantSignIn from "./pages/RestaurantSignIn.tsx";
-
+import SignUpForm from './pages/UserSignUp.tsx';
+import SignInForm from './pages/SignIn.tsx';
+import RestaurantSignIn from './pages/RestaurantSignIn.tsx';
+import RestaurantHome from './pages/RestaurantHome.tsx';
+import UserConfiguration from './pages/UserConfiguration.tsx';
+import ProtectedRoutes from './components/ProtectedRoutes.tsx';
+import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
 
 function App() {
+    const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
+    console.log('User authentication status:', isAuthenticated, localStorage.getItem('authToken')); // Log the authentication status
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Home />} />
+                {/* Public Routes */}
+                <Route path="/" element={<Navigate to="/signup" />} />
+                <Route path="/signup" element={<SignUpLayout />} />
                 <Route path="/Usersignup" element={<SignUpForm />} />
                 <Route path="/signin" element={<SignInForm />} />
                 <Route path="/restaurant-signup" element={<RestaurantSignUp />} />
-                <Route path="/SignUp" element={<SignUpUserRestaurantLayout/>}/>
-                <Route path="/restaurantHome" element={<RestaurantHome />} />
-                <Route path="/conf" element={<UserConfiguration />} />
-                <Route path="/restaurant" element={<RestaurantHomes/>} />
-                <Route path="restaurantss" element={<RestaurantDashboard />} />
-                <Route path="/tables" element={<TableManagement />} />
-                <Route path="/userTable" element={<UserTableSelection />} />
                 <Route path="/RestaurantSignIn" element={<RestaurantSignIn />} />
+
+                {/* Protected Routes */}
+                <Route
+                    element={isAuthenticated ? <ProtectedRoutes /> : <Navigate to="/signup" />}
+                >
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/restaurantHome" element={<RestaurantHome />} />
+                    <Route path="/userConfiguration" element={<UserConfiguration/>} />
+                </Route>
             </Routes>
         </BrowserRouter>
     );

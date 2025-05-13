@@ -20,6 +20,7 @@ const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
 const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
 
 const HomeForm: React.FC = () => {
+    console.log("HomeForm component rendered", localStorage.getItem("authToken"));
     const [formData, setFormData] = useState<HomeProps>({
         buscarLocales: '',
     });
@@ -38,6 +39,7 @@ const HomeForm: React.FC = () => {
 
         loadRestaurants();
     }, []); // ✅ load once on mount
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
