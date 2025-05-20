@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import HomeInput from '../components/HomeInput.tsx';
-import CategoryCard from '../components/CategoryCardHome.tsx';
-import MapCard from '../components/MapCardHome.tsx';
-import HomePageLayout from '../layouts/HomePageLayout.tsx';
-import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
-import { fetchRestaurants } from "../utils/RestaurantApi.ts";
-import { useNavigate } from "react-router-dom";
-
-
+import HomeInput from '../components/HomeInput';
+import CategoryCard from '../components/CategoryCardHome';
+import MapCard from '../components/MapCardHome';
+import HomePageLayout from '../layouts/HomePageLayout';
+import HomeLayout from '../layouts/HomeHeaderLayout';
+import { useNavigate } from 'react-router-dom';
+import { fetchPublicRestaurants } from '../utils/Api';
 
 interface HomeProps {
     buscarLocales: string;
@@ -16,28 +14,29 @@ interface HomeProps {
 interface SavedRestaurant {
     id: string;
     name: string;
-    image: string | null;
+    imageUrl: string;
 }
-
-const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
-const categoriesFavoritos = ["Fav1", "Fav2", "Fav3", "Fav4", "Fav5"];
 
 const HomeForm: React.FC = () => {
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState<HomeProps>({
-        buscarLocales: '',
-    });
-
-    const [savedRestaurants, setSavedRestaurants] = useState<SavedRestaurant[]>([]); // ✅
+    const [formData, setFormData] = useState<HomeProps>({ buscarLocales: '' });
+    const [savedRestaurants, setSavedRestaurants] = useState<SavedRestaurant[]>([]);
 
     useEffect(() => {
         const loadRestaurants = async () => {
             try {
-                const data = await fetchRestaurants();
-                console.log("Fetched restaurant data:", data); // 🔍 inspect the shape
-                // Adjust based on what you see in the console:
-                setSavedRestaurants(Array.isArray(data) ? data : data.restaurants);
+                const data = await fetchPublicRestaurants();
+                console.log("Fetched restaurant data:", data); // Inspect this!
+
+                if (Array.isArray(data)) {
+                    setSavedRestaurants(data);
+                } else if (data && Array.isArray(data.restaurants)) {
+                    setSavedRestaurants(data.restaurants);
+                } else {
+                    console.error("Unexpected data shape:", data);
+                    setSavedRestaurants([]);
+                }
             } catch (error) {
                 console.error("Failed to fetch restaurants:", error);
             }
@@ -70,51 +69,32 @@ const HomeForm: React.FC = () => {
 
     const popularCategories = (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-            {categoriesPopulares.map((category) => (
-                <CategoryCard
-                    key={category}
-                    title={category}
-                    onClick={() => console.log(`Clicked on ${category}`)}
-                />
-            ))}
-        </div>
-    );
-
-    const favoriteCategories = (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-            {categoriesFavoritos.map((category) => (
-                <CategoryCard
-                    key={category}
-                    title={category}
-                    onClick={() => console.log(`Clicked on ${category}`)}
-                />
+            {/* TODO: Dynamically fetch categories if needed */}
+            {['Pizza', 'Sushi', 'Burgers', 'Tacos', 'Desserts'].map(category => (
+                <CategoryCard key={category} title={category} onClick={() => console.log(category)} />
             ))}
         </div>
     );
 
     const mapCard = (
-        <MapCard
-            key="map"
-            title="Map"
-            onClick={() => console.log("Clicked on map")}
-        />
+        <MapCard key="map" title="Map" onClick={() => console.log('Clicked on map')} />
     );
 
-    const savedRestaurantCards = savedRestaurants.length > 0 && (
-         <div className="mt-10">
-             <h2 className="text-xl font-bold mb-4">Nuevos Restaurantes</h2>
-             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-                 {savedRestaurants.map((restaurant, index) => (
-                     <CategoryCard
-                         key={index}
-                         title={restaurant.name}
-                         imageUrl={restaurant.image ?? undefined}
-                         onClick={() => navigate(`/restaurant/${restaurant.id}`)}
-                     />
-                 ))}
-             </div>
-         </div>
-     );
+    const favoriteCategories =
+        savedRestaurants.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
+                {savedRestaurants.map(r => (
+                    <CategoryCard
+                        key={r.id}
+                        title={r.name}
+                        imageUrl={r.imageUrl}
+                        onClick={() => navigate(`/restaurant/${r.id}/layout`)}
+                    />
+                ))}
+            </div>
+        ) : (
+            <p>No hay restaurantes favoritos para mostrar.</p>
+        );
 
     return (
         <HomeLayout>
@@ -122,12 +102,7 @@ const HomeForm: React.FC = () => {
                 searchForm={searchForm}
                 popularCategories={popularCategories}
                 mapCard={mapCard}
-                favoriteCategories={
-                    <>
-                        {favoriteCategories}
-                        {savedRestaurantCards}
-                    </>
-                }
+                favoriteCategories={favoriteCategories}
             />
         </HomeLayout>
     );

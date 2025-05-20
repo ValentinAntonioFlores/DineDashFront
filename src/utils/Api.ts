@@ -22,10 +22,6 @@ export const signUp = async (payload: { firstName: string, lastName: string, ema
     }
 };
 
-
-// In Api.ts
-// utils/Api.ts
-
 export async function signIn(data: { email: string; password: string }) {
     const response = await axios.post('http://localhost:8000/clientUsers/login', data);
 
@@ -126,6 +122,28 @@ export const signUpRestaurant = async (payload: { restaurantName: string, email:
     } catch (error) {
         console.error('Error signing up:', error);
         throw error;  // Ensure the error is thrown
+    }
+};
+
+export const fetchPublicRestaurants = async () => {
+    try {
+        const response = await axios.get(
+            "http://localhost:8000/restaurantUsers/public/restaurants",
+            {
+                headers: { Authorization: "" },  // clear the default
+            }
+        );
+        return response.data;
+    } catch (e) {
+        // if the backend still returns text, grab it:
+        if (axios.isAxiosError(e) && e.response) {
+            // e.response.data may be text
+            const text = typeof e.response.data === "string"
+                ? e.response.data
+                : JSON.stringify(e.response.data);
+            throw new Error(`HTTP ${e.response.status}: ${text}`);
+        }
+        throw e;
     }
 };
 
