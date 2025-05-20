@@ -9,6 +9,7 @@ import RestaurantHome from './pages/RestaurantHome.tsx';
 import UserConfiguration from './pages/UserConfiguration.tsx';
 import ProtectedRoutes from './components/ProtectedRoutes.tsx';
 import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
+import RestaurantCardLayout from "./components/RestaurantCardLayout.tsx";
 
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/restaurant-signup" element={<RestaurantSignUp />} />
                 <Route path="/RestaurantSignIn" element={<RestaurantSignIn />} />
 
+
                 {/* Protected Routes */}
                 <Route
                     element={isAuthenticated ? <ProtectedRoutes /> : <Navigate to="/signup" />}
@@ -31,6 +33,7 @@ function App() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/restaurantHome" element={<RestaurantHome />} />
                     <Route path="/userConfiguration" element={<UserConfiguration/>} />
+                    <Route path="/restaurant/:id/layout" element={<RestaurantCardLayout />} />
                 </Route>
             </Routes>
         </BrowserRouter>
