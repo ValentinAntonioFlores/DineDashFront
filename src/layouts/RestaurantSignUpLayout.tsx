@@ -12,6 +12,18 @@ const RestaurantSignUpLayout: React.FC<SignUpLayoutProps> = ({ children }) => {
         navigate("/RestaurantSignIn"); // Navigate to user sign-in page
     };
 
+    if(localStorage.getItem("authToken")) {
+        const userInfo = localStorage.getItem("userInfo");
+        if (userInfo) {
+            const { userType } = JSON.parse(userInfo);
+            if (userType === 'restaurant') {
+                window.location.href = '/restaurantHome';
+            } else {
+                window.location.href = '/home';
+            }
+        }
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg flex overflow-hidden">

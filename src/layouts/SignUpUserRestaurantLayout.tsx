@@ -15,6 +15,19 @@ const SignUpLayout: React.FC<SignUpLayoutProps> = ({}) => {
         navigate("/Usersignup"); // Navigate to user sign-up page
     };
 
+    //si ya hay token, que me redirija a Home
+    if (localStorage.getItem("authToken")) {
+        const userInfo = localStorage.getItem("userInfo");
+        if (userInfo) {
+            const { userType } = JSON.parse(userInfo);
+            if (userType === 'restaurant') {
+                window.location.href = '/restaurantHome';
+            } else {
+                window.location.href = '/home';
+            }
+        }
+    }
+
     const handleRestaurantSignUp = () => {
         navigate("/restaurant-signup"); // Navigate to restaurant sign-up page
     };
