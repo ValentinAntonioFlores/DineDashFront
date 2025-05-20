@@ -15,6 +15,20 @@ const SignInForm: React.FC = () => {
         password: '',
     });
 
+    //si ya hay token, que me redirija a Home
+    if (localStorage.getItem("authToken")) {
+        const userInfo = localStorage.getItem("userInfo");
+        if (userInfo) {
+            const { userType } = JSON.parse(userInfo);
+            if (userType === 'restaurant') {
+                window.location.href = '/restaurantHome';
+            } else {
+                window.location.href = '/home';
+            }
+        }
+    }
+
+
     const [error, setError] = useState<string | null>(null);  // To display any login errors
 
     const navigate = useNavigate();
@@ -47,9 +61,9 @@ const SignInForm: React.FC = () => {
 
             // Redirect based on user type
             if (userType === 'restaurant') {
-                navigate('/restauranthome');
+                navigate('/restaurantHome');
             } else {
-                navigate('/');
+                navigate('/home');
             }
 
             window.location.reload();

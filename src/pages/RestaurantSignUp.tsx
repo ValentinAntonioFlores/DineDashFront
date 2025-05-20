@@ -48,7 +48,7 @@ const SignUpRestaurantForm: React.FC = () => {
             // Check the response message from the backend
             if (result.message === 'Restaurant registered successfully.') {
                 console.log('Signup successful!');
-                navigate('/restaurantHome'); // Redirect to the restaurant dashboard
+                navigate('/RestaurantSignIn'); // Redirect to the restaurant dashboard
             } else {
                 console.error('Signup failed', result.message);
             }

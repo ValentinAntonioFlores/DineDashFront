@@ -10,6 +10,7 @@ interface SignUpLayoutProps {
 const SignUpLayout: React.FC<SignUpLayoutProps> = ({}) => {
     const navigate = useNavigate();
 
+
     const handleUserSignUp = () => {
         navigate("/Usersignup"); // Navigate to user sign-up page
     };

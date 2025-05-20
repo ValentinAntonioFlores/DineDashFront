@@ -10,6 +10,7 @@ const Logout: React.FC<LogoutProps> = ({ onLogout }) => {
 
     const handleLogoutClick = () => {
         onLogout();
+        localStorage.removeItem('authToken'); // Elimina el token de autenticación
         navigate('/signup');
     };
 

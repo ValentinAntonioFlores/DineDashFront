@@ -54,7 +54,7 @@ const SignUpForm: React.FC = () => {
             // Check the response message from the backend
             if (result.message === 'User registered successfully.') {
                 console.log('Navigating to homepage...');
-                navigate('/'); // Redirect to homepage
+                navigate('/signin'); // Redirect to homepage
             } else {
                 console.error('Signup failed', result.message);
             }

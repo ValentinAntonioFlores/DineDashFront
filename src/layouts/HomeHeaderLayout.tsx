@@ -63,7 +63,7 @@ export default function HomeLayout({ children }: Props) {
                 <div className="flex items-center ml-auto space-x-4">
                     <span className="text-gray-700 font-medium">{firstName || 'user'}</span>
                     {/* Wrap avatar image in Link to redirect to /conf */}
-                    <Link to="/conf">
+                    <Link to="/userConfiguration">
                         <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden border-2 border-gray-400 cursor-pointer">
                             <img
                                 src={avatarUrl || 'https://i.pravatar.cc/150?u=valen'} // Use the avatar URL from localStorage

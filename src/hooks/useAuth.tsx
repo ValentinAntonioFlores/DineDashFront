@@ -79,7 +79,7 @@ export const useAuth = () => {
 
 
     const signOut = () => {
-        localStorage.removeItem('userInfo');
+        localStorage.removeItem('authToken');
         setUserData(null);
         navigate("/signup")
     };

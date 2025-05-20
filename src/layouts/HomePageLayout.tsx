@@ -17,6 +17,7 @@ const HomePageLayout: React.FC<HomePageLayoutProps> = ({
                                                            favoriteCategories,
                                                        }) => {
     return (
+
         <div className="px-6 py-4">
             {/* Search Form */}
             {searchForm}
