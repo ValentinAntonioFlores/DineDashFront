@@ -9,7 +9,7 @@ import RestaurantHome from './pages/RestaurantHome.tsx';
 import UserConfiguration from './pages/UserConfiguration.tsx';
 import ProtectedRoutes from './components/ProtectedRoutes.tsx';
 import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
-import RestaurantCardLayout from "./components/RestaurantCardLayout.tsx";
+import RestaurantCardLayout from "./layouts/RestaurantCardLayout.tsx";
 
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated

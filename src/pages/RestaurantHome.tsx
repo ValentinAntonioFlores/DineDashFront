@@ -122,10 +122,11 @@ const RestaurantHome: React.FC = () => {
 
     const toggleCell = (row: number, col: number) => {
         setGrid((prevGrid) => {
+            // debugger;
             const newGrid = prevGrid.map((r, rowIndex) =>
                 r.map((cell, colIndex) => {
                     // Prevent toggling reserved cells
-                    if (cell.reserved) return cell;
+                    // if (cell.reserved) return cell;
 
                     return rowIndex === row && colIndex === col
                         ? {

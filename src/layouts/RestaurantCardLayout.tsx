@@ -1,9 +1,9 @@
 // src/pages/RestaurantCardLayout.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import GridLayout from '../components/GridLayout';
+import GridLayout from '../components/GridLayout.tsx';
 import { fetchPublicRestaurants } from "../utils/Api.ts";
-import HomeLayout from '../layouts/HomeHeaderLayout.tsx';
+import HomeLayout from './HomeHeaderLayout.tsx';
 // DTO interfaces
 interface TableDTO {
     id: string;
