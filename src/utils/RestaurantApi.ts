@@ -57,3 +57,17 @@ export const getRestaurant = async (id: string) => {
         throw error;
     }
 };
+
+export const fetchRestaurantReservations = async (restaurantId: string) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/reservations/by-restaurant`,
+            { restaurantId },
+            { headers: { "Content-Type": "application/json" } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching reservations:", error);
+        throw error;
+    }
+};

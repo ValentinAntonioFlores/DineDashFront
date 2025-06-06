@@ -1,46 +1,50 @@
-// src/layouts/HomePageLayout.tsx
-import React from 'react';
-import { ReactNode } from 'react';
-
+import React, { ReactNode } from 'react';
 
 interface HomePageLayoutProps {
-    searchForm: ReactNode;
-    popularCategories: ReactNode;
-    mapCard: ReactNode;
-    favoriteCategories: ReactNode;
+    heroContent?: ReactNode;
+    searchForm?: ReactNode;
+    section1?: ReactNode;
+    section2?: ReactNode;
+    footer?: ReactNode;
 }
 
 const HomePageLayout: React.FC<HomePageLayoutProps> = ({
+                                                           heroContent,
                                                            searchForm,
-                                                           popularCategories,
-                                                           mapCard,
-                                                           favoriteCategories,
+                                                           section1,
+                                                           section2,
+                                                           footer,
                                                        }) => {
     return (
+        <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white text-gray-900 px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 py-12 space-y-24">
 
-        <div className="px-6 py-4">
-            {/* Search Form */}
-            {searchForm}
+            {/* HERO */}
+            <section className="text-center space-y-6 max-w-4xl mx-auto">
+                {heroContent}
+                {searchForm}
+            </section>
 
-            <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-semibold -translate-x-[1px]">Categorías populares</h2>
-                <h2 className="text-2xl font-semibold -translate-x-[449px]">Map</h2>
-            </div>
+            {/* SECTION 1 */}
+            {section1 && (
+                <section className="max-w-6xl mx-auto space-y-6">
+                    {section1}
+                </section>
+            )}
 
-            {/* Category Cards and Map Card side by side */}
-            <div className="flex flex-wrap gap-10">
-                <div className="max-w-[60%]">{popularCategories}</div>
-                {mapCard}
-            </div>
+            {/* SECTION 2 */}
+            {section2 && (
+                <section className="max-w-6xl mx-auto space-y-6">
+                    {section2}
+                </section>
+            )}
 
-            <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-semibold -translate-x-[1px]">Restaurantes Favoritos</h2>
-            </div>
-
-            <div className="flex flex-wrap gap-10">
-                <div className="max-w-[60%]">{favoriteCategories}</div>
-            </div>
-        </div>
+            {/* FOOTER */}
+            {footer && (
+                <footer className="border-t pt-12 mt-12 max-w-6xl mx-auto text-center text-sm text-gray-500">
+                    {footer}
+                </footer>
+            )}
+        </main>
     );
 };
 

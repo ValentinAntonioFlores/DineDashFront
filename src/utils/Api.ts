@@ -148,6 +148,158 @@ export const fetchPublicRestaurants = async () => {
 };
 
 
+export const makeReservation = async (reservation: {
+    userId: string;
+    restaurantId: string;
+
+    tableId: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+}) => {
+    try {
+        const response = await fetch('http://localhost:8000/reservations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reservation),
+        });
+
+        if (!response.ok) throw new Error("Failed to make reservation");
+
+        return await response.json();
+    } catch (error) {
+        console.error("Reservation error:", error);
+        throw error;
+    }
+};
+
+
+export const fetchUserReservations = async (userId: string) => {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        const response = await axios.post(
+            'http://localhost:8000/reservations/by-client-user',
+            { userId },
+            {
+                headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                },
+            }
+        );
+
+        if (Array.isArray(response.data)) {
+            return response.data; // List of Reservation objects
+        } else {
+            console.warn('Unexpected reservations data:', response.data);
+            return [];
+        }
+    } catch (error) {
+        console.error('Error fetching reservations:', error);
+        throw error;
+    }
+};
+
+export const fetchAcceptedReservationsByRestaurant = async (
+    restaurantId: string,
+    selectedStartTime: string,
+    selectedEndTime: string
+): Promise<string[]> => {  // returns array of UUID strings
+    try {
+        const token = localStorage.getItem('authToken');
+
+        const payload = {
+            restaurantId,
+            startTime: selectedStartTime,
+            endTime: selectedEndTime,
+        };
+
+        const response = await fetch('http://localhost:8000/reservations/reserved-tables', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.message || 'Failed to fetch reserved tables');
+        }
+
+        const reservedTableIds: string[] = await response.json();
+
+        if (!Array.isArray(reservedTableIds)) {
+            throw new Error('Unexpected response format: expected array of UUID strings');
+        }
+
+        // The backend returns reserved table IDs only, no need to filter by status here
+        return reservedTableIds;
+    } catch (error) {
+        console.error('Error fetching reserved tables:', error);
+        throw error;
+    }
+};
+
+export const makeReviewOnRestaurant = async (review: {
+    userId: string;
+    restaurantId: string;
+    rating: number;
+}) => {
+    try {
+        const response = await fetch('http://localhost:8000/reviews/client-to-restaurant', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                clientId: review.userId,
+                restaurantId: review.restaurantId,
+                starRating: review.rating,
+            }),
+        });
+
+        if (!response.ok) throw new Error("Failed to make review");
+
+        return await response.json();
+    } catch (error) {
+        console.error("Review error:", error);
+        throw error;
+    }
+}
+
+
+export const fetchReviewByClientAndRestaurant = async (clientId: string, restaurantId: string) => {
+    try {
+        const response = await fetch(`http://localhost:8000/reviews/client-to-restaurant?clientId=${clientId}&restaurantId=${restaurantId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (response.status === 404) {
+            return null; // no review found
+        }
+        if (!response.ok) {
+            throw new Error('Failed to fetch review');
+        }
+
+        const review = await response.json();
+        return review;
+    } catch (error) {
+        console.error("Error fetching review:", error);
+        throw error;
+    }
+};
+
+
+
+
+
 
 
 

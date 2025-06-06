@@ -7,33 +7,49 @@ interface Props {
 }
 
 const CategoryCard: React.FC<Props> = ({ title, imageUrl, onClick }) => {
-    // Determine the correct src:
     let src: string | undefined;
     if (imageUrl) {
-        if (imageUrl.startsWith('data:')) {
-            // Already a complete data URL (e.g. "data:image/png;base64,...")
-            src = imageUrl;
-        } else {
-            // Raw base64 blob — prepend JPEG prefix
-            src = `data:image/jpeg;base64,${imageUrl}`;
-        }
+        src = imageUrl.startsWith('data:')
+            ? imageUrl
+            : `data:image/jpeg;base64,${imageUrl}`;
     }
 
     return (
         <div
             onClick={onClick}
-            className="w-32 h-32 bg-white rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition overflow-hidden"
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onClick();
+                }
+            }}
+            className="
+        group
+        w-36 h-40
+        bg-white rounded-xl shadow-sm border border-gray-200
+        hover:shadow-md hover:border-gray-300 transition-all
+        cursor-pointer flex flex-col overflow-hidden
+        outline-none
+        focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1
+      "
         >
             {src ? (
                 <img
                     src={src}
                     alt={title}
-                    className="w-full h-20 object-cover"
+                    className="w-full h-24 object-cover rounded-t-xl group-hover:scale-105 transition-transform duration-200"
+                    loading="lazy"
                 />
             ) : (
-                <div className="w-full h-20 bg-gray-200" />
+                <div className="w-full h-24 bg-gray-100 rounded-t-xl flex items-center justify-center text-gray-400 select-none">
+                    No Image
+                </div>
             )}
-            <span className="text-center font-semibold p-1">{title}</span>
+            <div className="flex-1 flex items-center justify-center p-2 text-sm font-medium text-gray-800 text-center truncate">
+                {title}
+            </div>
         </div>
     );
 };

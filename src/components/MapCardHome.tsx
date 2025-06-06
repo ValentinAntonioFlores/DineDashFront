@@ -1,4 +1,4 @@
-// src/components/CategoryCard.tsx
+// src/components/MapCard.tsx
 import React from 'react';
 
 interface Props {
@@ -10,9 +10,9 @@ const MapCard: React.FC<Props> = ({ title, onClick }) => {
     return (
         <div
             onClick={onClick}
-            className="w-[480px] h-[300px] bg-white rounded-lg shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-100 transition"
+            className="w-full h-72 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 cursor-pointer transition-all flex items-center justify-center"
         >
-            <span className="text-center font-semibold">{title}</span>
+            <span className="text-xl font-semibold text-gray-700">{title}</span>
         </div>
     );
 };

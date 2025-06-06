@@ -1,117 +1,197 @@
-import React, { useState, useEffect } from 'react';
-import HomeInput from '../components/HomeInput.tsx';
-import CategoryCard from '../components/CategoryCardHome.tsx';
-import MapCard from '../components/MapCardHome.tsx';
-import HomePageLayout from '../layouts/HomePageLayout.tsx';
-import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
+import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from "react-router-dom";
-import {fetchPublicRestaurants} from "../utils/Api.ts";
+import HomePageLayout from '../layouts/HomePageLayout';
+import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
+import { fetchPublicRestaurants } from '../utils/Api.ts';
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
-
-
-interface HomeProps {
-    buscarLocales: string;
-}
-
-interface SavedRestaurant {
-    id: string;
-    name: string;
-    imageUrl: string;
-}
-
-const categoriesPopulares = ["Pizza", "Sushi", "Burgers", "Tacos", "Desserts"];
-
-const HomeForm: React.FC = () => {
+const Home: React.FC = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<HomeProps>({ buscarLocales: '' });
-    const [savedRestaurants, setSavedRestaurants] = useState<SavedRestaurant[]>([]);
+
+    const [restaurants, setRestaurants] = useState<
+        { id: string; name: string; imageUrl?: string }[]
+    >([]);
 
     useEffect(() => {
         (async () => {
             try {
-                // fetchPublicRestaurants returns PublicRestaurantDTO[]
                 const data = await fetchPublicRestaurants();
-                // map it directly into your component state
-                setSavedRestaurants(data.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    imageUrl: r.imageUrl
-                })));
+                setRestaurants(
+                    data.map(r => ({
+                        id: r.id,
+                        name: r.name,
+                        imageUrl: r.imageUrl,
+                    }))
+                );
             } catch (error) {
                 console.error("Failed to fetch public restaurants:", error);
             }
         })();
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        console.log(formData);
-    };
+    const heroContent = (
+        <>
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
+                Encuentra tu próximo restaurante favorito 🍽️
+            </h1>
+            <p className="text-lg text-gray-600 max-w-xl mx-auto">
+                Busca entre cientos de opciones locales y reserva tu mesa en segundos.
+            </p>
+        </>
+    );
 
     const searchForm = (
-        <form onSubmit={handleSubmit}>
-            <HomeInput
-                label="Buscar Locales"
-                name="buscarLocales"
+        <form className="w-full max-w-xl mx-auto mt-6">
+            <input
                 type="text"
-                value={formData.buscarLocales}
-                onChange={handleChange}
+                placeholder="Buscar restaurantes..."
+                className="w-full px-5 py-3 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
         </form>
     );
 
-    const popularCategories = (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-            {categoriesPopulares.map((category) => (
-                <CategoryCard
-                    key={category}
-                    title={category}
-                    onClick={() => console.log(`Clicked on ${category}`)}
-                />
-            ))}
-        </div>
+
+    // --- swipe logic ---
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    let touchStartX = 0;
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        // prevent unwanted vertical scrolling during swipe
+        const dx = e.touches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 10) e.preventDefault();
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const dx = touchEndX - touchStartX;
+        const container = scrollRef.current;
+
+        if (!container) return;
+
+        if (dx > 50) {
+            container.scrollBy({ left: -container.offsetWidth, behavior: "smooth" });
+        } else if (dx < -50) {
+            container.scrollBy({ left: container.offsetWidth, behavior: "smooth" });
+        }
+    };
+
+
+
+    const section1 = (
+        <>
+            <h2 className="text-2xl font-semibold mb-6">Recomendaciones para ti</h2>
+            <div className="relative">
+                {/* Left Arrow */}
+                <button
+                    onClick={() => {
+                        const container = scrollRef.current;
+                        container?.scrollBy({ left: -container.offsetWidth, behavior: "smooth" });
+                    }}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-100"
+                >
+                    <ChevronLeftIcon className="w-6 h-6 text-gray-700" />
+                </button>
+
+                {/* Right Arrow */}
+                <button
+                    onClick={() => {
+                        const container = scrollRef.current;
+                        container?.scrollBy({ left: container.offsetWidth, behavior: "smooth" });
+                    }}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-100"
+                >
+                    <ChevronRightIcon className="w-6 h-6 text-gray-700" />
+                </button>
+
+                {/* Scrollable Grid */}
+                <div
+                    ref={scrollRef}
+                    className="flex overflow-x-auto space-x-6 scrollbar-hide snap-x snap-mandatory scroll-smooth px-1"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    {restaurants.map(({ id, name, imageUrl }) => (
+                        <div
+                            key={id}
+                            onClick={() => navigate(`/restaurant/${id}/layout`)}
+                            className="min-w-[300px] max-w-[300px] flex-shrink-0 snap-start rounded-xl bg-white border border-gray-200 shadow-md hover:shadow-xl transform hover:scale-[1.03] transition-all cursor-pointer flex flex-col overflow-hidden"
+                        >
+                            {imageUrl ? (
+                                <div className="relative w-full h-48 overflow-hidden rounded-t-xl">
+                                    <img
+                                        src={imageUrl.startsWith("data:") ? imageUrl : `data:image/jpeg;base64,${imageUrl}`}
+                                        alt={name}
+                                        className="object-cover w-full h-full transition-opacity duration-500 ease-in-out opacity-90 hover:opacity-100"
+                                        loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-50" />
+                                </div>
+                            ) : (
+                                <div className="rounded-t-xl bg-gray-100 h-48 flex items-center justify-center text-gray-400 select-none">
+                                    No Image
+                                </div>
+                            )}
+                            <div className="p-5 flex flex-col flex-1">
+                                <h3 className="text-xl font-semibold mb-1 truncate">{name}</h3>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full select-none">
+                  Popular
+                </span>
+                                    <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded-full select-none">
+                  Cerca de ti
+                </span>
+                                </div>
+                                <p className="text-gray-600 text-sm flex-grow">
+                                    Disfruta de una experiencia gastronómica única y deliciosa.
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
     );
 
-    const favoriteCategories = savedRestaurants.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10">
-            {savedRestaurants.map(r => (
-                <CategoryCard
-                    key={r.id}
-                    title={r.name}
-                    imageUrl={r.imageUrl}
-                    // navigate to the layout page route
-                    onClick={() => navigate(`/restaurant/${r.id}/layout`)}
-                />
-            ))}
-        </div>
-    ) : (
-        <p>No hay restaurantes favoritos para mostrar.</p>
+
+
+
+
+    const section2 = (
+        <>
+            <h2 className="text-2xl font-semibold">Explora por categoría</h2>
+            <div className="flex flex-wrap gap-4">
+                {['Pizza', 'Sushi', 'Vegano', 'Parrilla'].map(cat => (
+                    <span
+                        key={cat}
+                        className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200"
+                    >
+                        {cat}
+                    </span>
+                ))}
+            </div>
+        </>
     );
 
-
-    const mapCard = (
-        <MapCard
-            key="map"
-            title="Map"
-            onClick={() => console.log("Clicked on map")}
-        />
+    const footer = (
+        <p>© {new Date().getFullYear()} TuApp. Todos los derechos reservados.</p>
     );
 
     return (
         <HomeLayout>
             <HomePageLayout
+                heroContent={heroContent}
                 searchForm={searchForm}
-                popularCategories={popularCategories}
-                mapCard={mapCard}
-                favoriteCategories={favoriteCategories}
+                section1={section1}
+                section2={section2}
+                footer={footer}
             />
         </HomeLayout>
     );
 };
 
-export default HomeForm;
+export default Home;

@@ -6,9 +6,12 @@ import Logout from "../components/Logout.tsx";
 import { fetchGridLayout, saveGridLayout } from "../utils/TableApi.ts";
 import { Table } from "../utils/TableApi";
 import {getRestaurant, saveRestaurant} from "../utils/RestaurantApi.ts";
+import RestaurantReservations from "../components/RestaurantReservations.tsx";
+import { motion } from "framer-motion";
+import Menu from "../components/Menu.tsx";
 
 const RestaurantHome: React.FC = () => {
-    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "logout">("image");
+    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" | "menu" | "logout">("image");
     const [grid, setGrid] = useState<Table[][]>(
         Array.from({ length: 10 }, () =>
             Array.from({ length: 10 }, () => ({ isTable: false, seats: 0, reserved: false }))
@@ -142,25 +145,38 @@ const RestaurantHome: React.FC = () => {
     };
 
     return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
         <div className="flex h-screen">
-            {/* Sidebar */}
-            <div className="w-48 bg-gray-800 text-white flex flex-col items-center py-8">
-                <button onClick={() => setSelectedSection("image")} className="mb-4 p-2 w-full hover:bg-gray-700">
-                    📷 Image Upload
-                </button>
-                <button onClick={() => setSelectedSection("layout")} className="mb-4 p-2 w-full hover:bg-gray-700">
-                    🪑 Grid Layout
-                </button>
-                <button onClick={() => setSelectedSection("reservations")} className="mb-4 p-2 w-full hover:bg-gray-700">
-                    📅 Reservations
-                </button>
-                <button onClick={() => setSelectedSection("logout")} className="mb-4 p-2 w-full hover:bg-gray-700">
-                    👤 Personal Account
-                </button>
+            <div className="w-56 bg-gradient-to-b from-gray-900 to-gray-700 text-white flex flex-col items-center py-8 space-y-2 shadow-lg">
+                {[
+                    { label: "Image Upload", value: "image", icon: "📷" },
+                    { label: "Grid Layout", value: "layout", icon: "🪑" },
+                    { label: "Reservations", value: "reservations", icon: "📅" },
+                    { label: "Notifications", value: "notifications", icon: "🔔" },
+                    { label: "Menu", value: "menu", icon: "📋" },
+                    { label: "Personal Account", value: "logout", icon: "👤" },
+                ].map((item) => (
+                    <button
+                        key={item.value}
+                        onClick={() => setSelectedSection(item.value as any)}
+                        className={`w-11/12 py-2 px-4 rounded-lg text-left transition-all duration-200
+                ${selectedSection === item.value ? "bg-white text-gray-900 font-semibold shadow-inner" : "hover:bg-gray-600"}
+            `}
+
+                    >
+                        <span className="mr-2">{item.icon}</span>
+                        {item.label}
+                    </button>
+                ))}
             </div>
 
+
             {/* Main Content */}
-            <div className="flex-1 p-8">
+            <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
                 {selectedSection === "image" && (
                     <>
                         <ImageUpload
@@ -212,20 +228,28 @@ const RestaurantHome: React.FC = () => {
                     <ReservationsOverview grid={grid} toggleReservation={(row, col) => toggleCell(row, col)} />
                 )}
 
+                {selectedSection === "menu" && <Menu />}
+
                 {selectedSection === "logout" && (
-                    <div className="flex flex-col items-center">
-                        <h3 className="text-lg font-bold mb-4">Personal Account</h3>
+                    <div className="flex flex-col items-center max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-md">
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">Personal Account</h3>
                         {userInfo && (
-                            <div className="mb-4">
-                                <p className="text-sm">Restaurant Name: {userInfo.restaurantName}</p>
-                                <p className="text-sm">Email: {userInfo.email}</p>
+                            <div className="text-center mb-6">
+                                <p className="text-gray-600 text-sm">Restaurant:</p>
+                                <p className="text-lg font-medium">{userInfo.restaurantName}</p>
+                                <p className="text-gray-600 mt-1 text-sm">{userInfo.email}</p>
                             </div>
                         )}
                         <Logout onLogout={handleLogout} />
                     </div>
                 )}
+
+                {selectedSection === "notifications" && (
+                    <RestaurantReservations />
+                )}
             </div>
         </div>
+        </motion.div>
     );
 };
 

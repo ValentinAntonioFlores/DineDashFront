@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Pencil } from 'lucide-react';
+import {Bell, CalendarCheck, Pencil, Shield, User} from 'lucide-react';
 import { EditableField } from "../components/EditableField.tsx";
-import { useNavigate } from 'react-router-dom'; // <-- import this
+import { useNavigate } from 'react-router-dom';
+import { fetchUserReservations } from "../utils/Api.ts";
 
 type Props = {
     formData: {
@@ -17,23 +18,35 @@ type Props = {
     userId: string;
 };
 
-
 export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, onSave, userId }) => {
-    const navigate = useNavigate(); // <-- Add this hook
+    const navigate = useNavigate();
     const [selectedCard, setSelectedCard] = useState<string>('Profile Settings');
     const [isEditingAll, setIsEditingAll] = useState(false);
     const [changePassword, setChangePassword] = useState(false);
     const [currentFormData, setCurrentFormData] = useState(formData);
+    const [reservations, setReservations] = useState<any[]>([]);
 
     useEffect(() => {
         setCurrentFormData(formData);
     }, [formData]);
 
+    useEffect(() => {
+        const loadReservations = async () => {
+            if (selectedCard === 'Reservations' && userId) {
+                try {
+                    const data = await fetchUserReservations(userId);
+                    setReservations(data);
+                } catch (error) {
+                    console.error("Failed to fetch reservations:", error);
+                }
+            }
+        };
+
+        loadReservations();
+    }, [selectedCard, userId]);
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-            return;
-        }
+        if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
 
         try {
             const token = localStorage.getItem('authToken');
@@ -44,15 +57,14 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                 },
             });
 
-            localStorage.removeItem('authToken'); // clear token
+            localStorage.removeItem('authToken');
             alert("Account deleted successfully!");
-            navigate('/signup'); // redirect after delete
+            navigate('/signup');
         } catch (error) {
             console.error('Error deleting account:', error);
             alert('Failed to delete account. Please try again.');
         }
     };
-
 
     const handleSaveAll = async () => {
         if (!currentFormData) return;
@@ -83,185 +95,170 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
     };
 
     return (
-        <div className="bg-white h-screen flex">
+        <div className="flex h-screen bg-gray-50 text-gray-800">
             {/* Sidebar */}
-            <div className="w-[250px] bg-gray-100 p-4 flex flex-col justify-between h-full">
-                <div className="space-y-2">
-                    {['Profile Settings', 'Account Info', 'Notifications', 'Privacy'].map((label) => (
-                        <SidebarCard
+            <aside className="w-64 bg-white border-r p-4 shadow-md rounded-r-xl flex flex-col">
+                <nav className="space-y-2">
+                    {[
+                        { label: 'Profile Settings', icon: <Pencil className="w-4 h-4" /> },
+                        { label: 'Account Info', icon: <User className="w-4 h-4" /> },
+                        { label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
+                        { label: 'Privacy', icon: <Shield className="w-4 h-4" /> },
+                        { label: 'Reservations', icon: <CalendarCheck className="w-4 h-4" /> },
+                    ].map(({ label, icon }) => (
+                        <button
                             key={label}
-                            label={label}
                             onClick={() => setSelectedCard(label)}
-                            selected={selectedCard === label}
-                        />
+                            className={`flex items-center w-full gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all
+          ${selectedCard === label
+                                ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300'
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-blue-600'}`}
+                        >
+                            {icon}
+                            {label}
+                        </button>
                     ))}
+                </nav>
+
+                <div className="mt-auto pt-6">
+                    <button
+                        onClick={handleDeleteAccount}
+                        className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
+                    >
+                        Delete Account
+                    </button>
                 </div>
+            </aside>
 
-                <button
-                    type="button"
-                    onClick={handleDeleteAccount}
-                    className="w-full text-white bg-red-500 hover:bg-red-600 p-2 rounded"
-                >
-                    Delete Account
-                </button>
-            </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
-                <div className="bg-gray-100 p-6 rounded shadow-md w-full max-w-[1000px] space-y-6">
-                    <div className="flex items-center justify-center gap-2">
-                        <h2 className="text-2xl font-semibold text-center">{selectedCard}</h2>
+            {/* Main content */}
+            <main className="flex-1 p-8 overflow-y-auto">
+                <div className="bg-white rounded-xl shadow-md p-6 max-w-4xl mx-auto space-y-6">
+                    <header className="flex justify-between items-center">
+                        <h2 className="text-2xl font-semibold">{selectedCard}</h2>
                         {selectedCard === 'Profile Settings' && (
                             <button
                                 onClick={() => setIsEditingAll(!isEditingAll)}
                                 className="text-gray-500 hover:text-gray-700"
-                                title="Edit All"
+                                title="Toggle Edit Mode"
                             >
                                 <Pencil size={20} />
                             </button>
                         )}
-                    </div>
+                    </header>
 
-                    {selectedCard === 'Profile Settings' && (
-                        <>
-                            <div className="flex gap-4">
-                                <EditableField
-                                    label="First Name"
-                                    name="firstName"
-                                    value={currentFormData.firstName || ""}
-                                    onChange={(e) =>
-                                        setCurrentFormData((prev) => ({
-                                            ...prev,
-                                            firstName: e.target.value,
-                                        }))
-                                    }
-                                    isEditing={isEditingAll}
-                                />
-                                <EditableField
-                                    label="Last Name"
-                                    name="lastName"
-                                    value={currentFormData.lastName || ""}
-                                    onChange={(e) =>
-                                        setCurrentFormData((prev) => ({
-                                            ...prev,
-                                            lastName: e.target.value,
-                                        }))
-                                    }
-                                    isEditing={isEditingAll}
-                                />
-                            </div>
-                            <EditableField
-                                label="Email"
-                                name="email"
-                                value={currentFormData.email || ""}
-                                onChange={(e) =>
-                                    setCurrentFormData((prev) => ({
-                                        ...prev,
-                                        email: e.target.value,
-                                    }))
-                                }
-                                isEditing={isEditingAll}
-                            />
-
-                            {isEditingAll && (
-                                <label className="flex items-center gap-2 text-sm text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={changePassword}
-                                        onChange={(e) => setChangePassword(e.target.checked)}
-                                    />
-                                    Change Password
-                                </label>
-                            )}
-
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                    <section className="space-y-6">
+                        {selectedCard === 'Profile Settings' && (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <EditableField
-                                        label="Password"
-                                        name="password"
-                                        value={currentFormData.password || ""}
-                                        onChange={(e) =>
-                                            setCurrentFormData((prev) => ({
-                                                ...prev,
-                                                password: e.target.value,
-                                            }))
-                                        }
-                                        isEditing={isEditingAll && changePassword}
-                                        disabled={!changePassword}
+                                        label="First Name"
+                                        name="firstName"
+                                        value={currentFormData.firstName}
+                                        onChange={(e) => setCurrentFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                                        isEditing={isEditingAll}
+                                    />
+                                    <EditableField
+                                        label="Last Name"
+                                        name="lastName"
+                                        value={currentFormData.lastName}
+                                        onChange={(e) => setCurrentFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                                        isEditing={isEditingAll}
                                     />
                                 </div>
-                                {isEditingAll && changePassword && (
-                                    <div className="w-1/2">
+
+                                <EditableField
+                                    label="Email"
+                                    name="email"
+                                    value={currentFormData.email}
+                                    onChange={(e) => setCurrentFormData(prev => ({ ...prev, email: e.target.value }))}
+                                    isEditing={isEditingAll}
+                                />
+
+                                {isEditingAll && (
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={changePassword}
+                                            onChange={(e) => setChangePassword(e.target.checked)}
+                                            className="accent-blue-500"
+                                        />
+                                        Change Password
+                                    </label>
+                                )}
+
+                                {changePassword && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <EditableField
+                                            label="Password"
+                                            name="password"
+                                            value={currentFormData.password}
+                                            onChange={(e) => setCurrentFormData(prev => ({ ...prev, password: e.target.value }))}
+                                            isEditing={isEditingAll}
+                                        />
                                         <EditableField
                                             label="Confirm Password"
                                             name="confirmPassword"
-                                            value={currentFormData.confirmPassword || ""}
-                                            onChange={(e) =>
-                                                setCurrentFormData((prev) => ({
-                                                    ...prev,
-                                                    confirmPassword: e.target.value,
-                                                }))
-                                            }
-                                            isEditing={true}
+                                            value={currentFormData.confirmPassword}
+                                            onChange={(e) => setCurrentFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                                            isEditing={isEditingAll}
                                         />
                                     </div>
                                 )}
+
+                                <button
+                                    onClick={handleSaveAll}
+                                    className={`w-full py-2 text-white font-semibold rounded-lg transition ${
+                                        isEditingAll
+                                            ? 'bg-blue-600 hover:bg-blue-700'
+                                            : 'bg-gray-400 cursor-not-allowed'
+                                    }`}
+                                    disabled={!isEditingAll}
+                                >
+                                    Save Changes
+                                </button>
+                            </>
+                        )}
+
+                        {selectedCard === 'Account Info' && (
+                            <textarea
+                                name="message"
+                                value={currentFormData.message}
+                                onChange={onChange}
+                                placeholder="Your message..."
+                                className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200"
+                                rows={5}
+                            />
+                        )}
+
+                        {selectedCard === 'Notifications' && <p className="text-gray-600">Manage your notification preferences here.</p>}
+                        {selectedCard === 'Privacy' && <p className="text-gray-600">Adjust your privacy settings.</p>}
+
+                        {selectedCard === 'Reservations' && (
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                {reservations.length === 0 ? (
+                                    <p className="text-gray-500">You have no reservations yet.</p>
+                                ) : (
+                                    reservations.map((res, i) => (
+                                        <div key={i} className="bg-white border rounded-lg p-4 shadow-sm transition hover:shadow-md">
+                                            <p className="text-sm text-gray-500">Reservation #{i + 1}</p>
+                                            <p className="mt-1"><span className="font-semibold">Restaurant:</span> {res.restaurantName}</p>
+                                            <p><span className="font-semibold">Date:</span> {res.date}</p>
+                                            <p><span className="font-semibold">Time:</span> {res.time}</p>
+                                            <p><span className="font-semibold">Table:</span> {res.tableId}</p>
+                                            <p><span className="font-semibold">Status:</span> <span className={`px-2 py-1 text-xs rounded ${
+                                                res.reservationStatus === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
+                                                    res.reservationStatus === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                            }`}>{res.reservationStatus}</span></p>
+                                        </div>
+                                    ))
+                                )}
                             </div>
-                        </>
-                    )}
-
-                    {selectedCard === 'Account Info' && (
-                        <textarea
-                            name="message"
-                            value={currentFormData.message || ""}
-                            onChange={onChange}
-                            placeholder="Message"
-                            className="w-full border border-gray-300 p-2 rounded h-24"
-                        />
-                    )}
-
-                    {selectedCard === 'Notifications' && <p>You can manage notification settings here.</p>}
-                    {selectedCard === 'Privacy' && <p>Privacy controls go here.</p>}
-
-                    {selectedCard === 'Profile Settings' && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (isEditingAll) {
-                                    handleSaveAll();
-                                }
-                            }}
-                            className={`w-full text-white p-2 rounded transition ${
-                                isEditingAll
-                                    ? 'bg-blue-500 hover:bg-blue-600'
-                                    : 'bg-gray-400 cursor-not-allowed'
-                            }`}
-                            disabled={!isEditingAll}
-                        >
-                            {isEditingAll ? 'Confirm' : 'Confirm'}
-                        </button>
-                    )}
+                        )}
+                    </section>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-type CardProps = {
-    label: string;
-    onClick?: () => void;
-    selected?: boolean;
-};
-
-const SidebarCard: React.FC<CardProps> = ({ label, onClick, selected }) => {
-    return (
-        <div
-            onClick={onClick}
-            className={`cursor-pointer border p-4 rounded transition ${
-                selected ? 'bg-blue-200 border-blue-500' : 'bg-white border-gray-400 hover:bg-blue-100'
-            }`}
-        >
-            <span className="text-gray-700">{label}</span>
+            </main>
         </div>
     );
 };
