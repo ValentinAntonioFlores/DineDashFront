@@ -2,8 +2,9 @@ import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from "react-router-dom";
 import HomePageLayout from '../layouts/HomePageLayout';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
-import { fetchPublicRestaurants } from '../utils/Api.ts';
+import { fetchPublicRestaurants, fetchUserFavoritesForHome } from '../utils/Api.ts';
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { useAuth } from '../hooks/useAuth.tsx';
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -12,22 +13,44 @@ const Home: React.FC = () => {
         { id: string; name: string; imageUrl?: string }[]
     >([]);
 
+    const [favoriteRestaurants, setFavoriteRestaurants] = useState<
+        { id: string; name: string; imageUrl?: string }[]
+    >([]);
+
+    const { userData } = useAuth();
+
+
     useEffect(() => {
         (async () => {
             try {
-                const data = await fetchPublicRestaurants();
+                const publicData = await fetchPublicRestaurants();
                 setRestaurants(
-                    data.map(r => ({
+                    publicData.map(r => ({
+                        id: r.id,
+                        name: r.name,
+                        imageUrl: r.imageUrl,
+                    }))
+                );
+
+                if (!userData?.id) return;
+
+                const favoriteIds = await fetchUserFavoritesForHome(userData.id);
+                console.log("Fetched favorite IDs:", favoriteIds);
+
+                const favorites = publicData.filter(r => favoriteIds.includes(r.id));
+                setFavoriteRestaurants(
+                    favorites.map(r => ({
                         id: r.id,
                         name: r.name,
                         imageUrl: r.imageUrl,
                     }))
                 );
             } catch (error) {
-                console.error("Failed to fetch public restaurants:", error);
+                console.error("Error fetching restaurants or favorites:", error);
             }
         })();
-    }, []);
+    }, [userData]);
+
 
     const heroContent = (
         <>
@@ -83,7 +106,7 @@ const Home: React.FC = () => {
 
     const section1 = (
         <>
-            <h2 className="text-2xl font-semibold mb-6">Recomendaciones para ti</h2>
+            <h2 className="text-2xl font-semibold mb-6">Todos los Restaurantes</h2>
             <div className="relative">
                 {/* Left Arrow */}
                 <button
@@ -156,7 +179,42 @@ const Home: React.FC = () => {
             </div>
         </>
     );
-
+    const sectionFavorites = favoriteRestaurants.length > 0 && (
+        <>
+            <h2 className="text-2xl font-semibold mb-6 mt-12"> Favorite Restaurants </h2>
+            <div className="flex overflow-x-auto space-x-6 scrollbar-hide snap-x snap-mandatory scroll-smooth px-1">
+                {favoriteRestaurants.map(({ id, name, imageUrl }) => (
+                    <div
+                        key={id}
+                        onClick={() => navigate(`/restaurant/${id}/layout`)}
+                        className="min-w-[300px] max-w-[300px] flex-shrink-0 snap-start rounded-xl bg-white border border-gray-200 shadow-md hover:shadow-xl transform hover:scale-[1.03] transition-all cursor-pointer flex flex-col overflow-hidden"
+                    >
+                        {imageUrl ? (
+                            <div className="relative w-full h-48 overflow-hidden rounded-t-xl">
+                                <img
+                                    src={imageUrl.startsWith("data:") ? imageUrl : `data:image/jpeg;base64,${imageUrl}`}
+                                    alt={name}
+                                    className="object-cover w-full h-full transition-opacity duration-500 ease-in-out opacity-90 hover:opacity-100"
+                                    loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-50" />
+                            </div>
+                        ) : (
+                            <div className="rounded-t-xl bg-gray-100 h-48 flex items-center justify-center text-gray-400 select-none">
+                                No Image
+                            </div>
+                        )}
+                        <div className="p-5 flex flex-col flex-1">
+                            <h3 className="text-xl font-semibold mb-1 truncate">{name}</h3>
+                            <p className="text-gray-600 text-sm flex-grow">
+                                Disfruta de una experiencia gastronómica única y deliciosa.
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
 
 
 
@@ -188,6 +246,7 @@ const Home: React.FC = () => {
                 searchForm={searchForm}
                 section1={section1}
                 section2={section2}
+                sectionFavorites={sectionFavorites}
                 footer={footer}
             />
         </HomeLayout>

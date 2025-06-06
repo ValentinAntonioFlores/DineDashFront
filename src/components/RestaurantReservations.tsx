@@ -14,6 +14,15 @@ type Reservation = {
 
 const STATUS_FILTERS = ["ALL", "PENDING", "ACCEPTED", "REJECTED"];
 
+const generateTimeBlocks = () => [
+    { label: "5:00 PM - 6:30 PM", start: "17:00", end: "18:30" },
+    { label: "6:30 PM - 8:00 PM", start: "18:30", end: "20:00" },
+    { label: "8:00 PM - 9:30 PM", start: "20:00", end: "21:30" },
+    { label: "9:30 PM - 11:00 PM", start: "21:30", end: "23:00" },
+    { label: "1:00 AM - 2:30 AM", start: "01:00", end: "02:30" },
+];
+
+
 const RestaurantReservations = () => {
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [filter, setFilter] = useState<string>("ALL");
@@ -23,6 +32,7 @@ const RestaurantReservations = () => {
     const [filterDate, setFilterDate] = useState<string>("");
     const [filterStartTime, setFilterStartTime] = useState<string>("");
     const [filterEndTime, setFilterEndTime] = useState<string>("");
+
 
 
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -39,6 +49,7 @@ const RestaurantReservations = () => {
             console.error("Failed to fetch reservations", error);
         }
     };
+
 
     useEffect(() => {
         fetchReservations();
@@ -60,6 +71,21 @@ const RestaurantReservations = () => {
         }
     };
 
+    const isInTimeBlock = (reservationStart: Date, reservationEnd: Date, blockStart: string, blockEnd: string) => {
+        const resStart = reservationStart.getHours() * 60 + reservationStart.getMinutes();
+        const resEnd = reservationEnd.getHours() * 60 + reservationEnd.getMinutes();
+
+        const [blockStartHour, blockStartMinute] = blockStart.split(":").map(Number);
+        const [blockEndHour, blockEndMinute] = blockEnd.split(":").map(Number);
+
+        const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
+        const blockEndMinutes = blockEndHour * 60 + blockEndMinute;
+
+        // Only show reservations that are fully within the block
+        return resStart >= blockStartMinutes && resEnd <= blockEndMinutes;
+    };
+
+
     // Close dropdown if clicked outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -80,15 +106,33 @@ const RestaurantReservations = () => {
         const matchesStatus = filter === "ALL" || r.status === filter;
 
         const reservationDate = new Date(r.startTime);
-        const dateString = reservationDate.toISOString().split("T")[0]; // "YYYY-MM-DD"
-        const timeString = reservationDate.toTimeString().slice(0, 5); // "HH:mm"
+        const dateString = reservationDate.getFullYear().toString().padStart(4, '0') + '-' +
+            (reservationDate.getMonth() + 1).toString().padStart(2, '0') + '-' +
+            reservationDate.getDate().toString().padStart(2, '0');
+
 
         const matchesDate = !filterDate || filterDate === dateString;
-        const matchesStartTime = !filterStartTime || timeString >= filterStartTime;
-        const matchesEndTime = !filterEndTime || timeString <= filterEndTime;
+        let matchesTimeBlock = true;
+        if (filterStartTime && filterEndTime) {
+            const reservationStart = new Date(r.startTime);
+            const reservationEnd = new Date(r.endTime);
+            matchesTimeBlock = isInTimeBlock(reservationStart, reservationEnd, filterStartTime, filterEndTime);
+        }
 
-        return matchesStatus && matchesDate && matchesStartTime && matchesEndTime;
+
+        return matchesStatus && matchesDate && matchesTimeBlock;
     });
+
+    const formatDateTime = (isoString: string) =>
+        new Date(isoString).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+
 
 
     return (
@@ -107,22 +151,34 @@ const RestaurantReservations = () => {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                    <input
-                        type="time"
-                        value={filterStartTime}
-                        onChange={(e) => setFilterStartTime(e.target.value)}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time Block</label>
+                    <select
+                        onChange={(e) => {
+                            const block = generateTimeBlocks().find(b => b.label === e.target.value);
+                            if (block) {
+                                setFilterStartTime(block.start);
+                                setFilterEndTime(block.end);
+                            } else {
+                                // If no block is selected (i.e. "All Time Blocks"), clear the time filters
+                                setFilterStartTime("");
+                                setFilterEndTime("");
+                            }
+                        }}
                         className="border border-gray-300 rounded px-2 py-1"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                    <input
-                        type="time"
-                        value={filterEndTime}
-                        onChange={(e) => setFilterEndTime(e.target.value)}
-                        className="border border-gray-300 rounded px-2 py-1"
-                    />
+                        value={
+                            generateTimeBlocks().find(
+                                b => b.start === filterStartTime && b.end === filterEndTime
+                            )?.label || ""
+                        }
+                    >
+                        <option value="">All Time Blocks</option>
+                        {generateTimeBlocks().map((block) => (
+                            <option key={block.label} value={block.label}>
+                                {block.label}
+                            </option>
+                        ))}
+                    </select>
+
                 </div>
             </div>
             {/* Filter Dropdown */}
@@ -182,12 +238,12 @@ const RestaurantReservations = () => {
                                     {res.clientUserName}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    <span className="font-semibold text-gray-800">Start Time:</span>{" "}
-                                    {new Date(res.startTime).toLocaleString()}
+                                <span className="font-semibold text-gray-800">Start Time:</span>{" "}
+                                    {formatDateTime(res.startTime)}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     <span className="font-semibold text-gray-800">End Time:</span>{" "}
-                                    {new Date(res.endTime).toLocaleString()}
+                                    {formatDateTime(res.endTime)}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     <span className="font-semibold text-gray-800">Table:</span>{" "}

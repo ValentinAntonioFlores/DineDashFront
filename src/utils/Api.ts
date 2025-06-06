@@ -269,7 +269,7 @@ export const makeReviewOnRestaurant = async (review: {
         console.error("Review error:", error);
         throw error;
     }
-}
+};
 
 
 export const fetchReviewByClientAndRestaurant = async (clientId: string, restaurantId: string) => {
@@ -295,6 +295,43 @@ export const fetchReviewByClientAndRestaurant = async (clientId: string, restaur
         throw error;
     }
 };
+
+export const markAsFavorite = async (userId: string, restaurantId: string) => {
+    return fetch(`http://localhost:8000/favorites/mark?clientId=${userId}&restaurantId=${restaurantId}`, {
+        method: 'POST',
+    });
+};
+
+export const unmarkAsFavorite = async (userId: string, restaurantId: string) => {
+    return fetch(`http://localhost:8000/favorites/remove?clientId=${userId}&restaurantId=${restaurantId}`, {
+        method: 'DELETE',
+    });
+};
+
+type Favorite = {
+    restaurantUser: {
+        idRestaurante: string;
+    };
+};
+
+export async function fetchUserFavorites(userId: string): Promise<Favorite[]> {
+    const res = await fetch(`http://localhost:8000/favorites/${userId}`);
+    if (!res.ok) throw new Error("Failed to fetch favorites");
+
+    return await res.json();
+}
+
+export async function fetchUserFavoritesForHome(userId: string): Promise<string[]> {
+    type FavoriteDTO = {
+        restaurantId: string;
+    };
+    const res = await fetch(`http://localhost:8000/favorites/${userId}`);
+    if (!res.ok) throw new Error("Failed to fetch favorites");
+
+    const favorites: FavoriteDTO[] = await res.json();
+    console.log("Favorites received from backend:", favorites);
+    return favorites.map(f => f.restaurantId);
+}
 
 
 

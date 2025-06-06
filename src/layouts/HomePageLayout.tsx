@@ -5,6 +5,7 @@ interface HomePageLayoutProps {
     searchForm?: ReactNode;
     section1?: ReactNode;
     section2?: ReactNode;
+    sectionFavorites?: ReactNode
     footer?: ReactNode;
 }
 
@@ -13,6 +14,7 @@ const HomePageLayout: React.FC<HomePageLayoutProps> = ({
                                                            searchForm,
                                                            section1,
                                                            section2,
+                                                           sectionFavorites,
                                                            footer,
                                                        }) => {
     return (
@@ -30,7 +32,12 @@ const HomePageLayout: React.FC<HomePageLayoutProps> = ({
                     {section1}
                 </section>
             )}
-
+            {/* SECTION FAVORITES */}
+            {sectionFavorites && (
+                <section className="max-w-6xl mx-auto space-y-6">
+                    {sectionFavorites}
+                </section>
+            )}
             {/* SECTION 2 */}
             {section2 && (
                 <section className="max-w-6xl mx-auto space-y-6">

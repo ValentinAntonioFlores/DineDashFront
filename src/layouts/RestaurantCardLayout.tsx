@@ -3,11 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GridLayout from '../components/GridLayout.tsx';
 import CustomCalendar from '../components/Calendar.tsx';
-import {fetchAcceptedReservationsByRestaurant, fetchPublicRestaurants, makeReservation} from "../utils/Api.ts";
+import {fetchAcceptedReservationsByRestaurant, fetchPublicRestaurants, makeReservation, markAsFavorite, unmarkAsFavorite, fetchUserFavoritesForHome} from "../utils/Api.ts";
 import HomeLayout from './HomeHeaderLayout.tsx';
 import { FaStar, FaRegStar} from 'react-icons/fa';
 import { ReservationReviewPopup } from '../components/ReservationReviewPopup'; // adjust the path if needed
 import { ReviewButton} from "../components/ReviewButton.tsx";
+
+
 
 
 // DTO interfaces
@@ -43,9 +45,9 @@ const formatDate = (date: Date) => {
     return `${y}-${m}-${d}`;
 };
 
-// Helper to format date for showing in input (e.g. May 23, 2025)
-const formatDateDisplay = (date: Date) =>
-    date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+
+
+
 
 const RestaurantCardLayout: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -67,6 +69,39 @@ const RestaurantCardLayout: React.FC = () => {
         // You can extend this to send the review to backend or store locally
         setShowReviewPopUp(false);
     };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!id) return;
+            try {
+                const all = await fetchPublicRestaurants();
+                const found = all.find(r => r.id === id);
+                if (!found) throw new Error('Restaurant not found');
+                setRestaurant(found);
+                setError(null);
+
+                // Check if user has favorited this restaurant
+                const userInfoString = localStorage.getItem('userInfo');
+                if (userInfoString) {
+                    const { id: userId } = JSON.parse(userInfoString);
+                    const favorites = await fetchUserFavoritesForHome(userId);
+                    console.log("Favorites returned for user:", favorites);
+                    console.log("Current restaurant ID:", found.id);
+                    setIsFavorited(favorites.includes(found.id));
+                } else {
+                    setIsFavorited(false); // no user, can't favorite
+                }
+            } catch (e: any) {
+                console.error(e);
+                setError(e.message || 'Unable to load restaurant');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
 
     // State to track reserved tables
     const [reservedTables, setReservedTables] = useState<Set<string>>(new Set());
@@ -107,9 +142,6 @@ const RestaurantCardLayout: React.FC = () => {
         fetchReservedTables();
 
     }, [id, selectedDate, selectedTime, selectedTable, restaurant]);
-
-
-
 
 
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -208,30 +240,6 @@ const RestaurantCardLayout: React.FC = () => {
 
 
 
-    useEffect(() => {
-        if (!id) return;
-        const fetchData = async () => {
-            try {
-                const all = await fetchPublicRestaurants();
-                const found = all.find(r => r.id === id);
-                if (!found) throw new Error('Restaurant not found');
-                setRestaurant(found);
-                setError(null);
-            } catch (e: any) {
-                console.error(e);
-                setError(e.message || 'Unable to load restaurant');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-
-        const intervalId = setInterval(fetchData, 30000); // every 30 seconds
-
-        return () => clearInterval(intervalId);
-    }, [id]);
-
 
     if (loading) return <HomeLayout><p className="p-6">Loading…</p></HomeLayout>;
     if (error) return <HomeLayout><p className="p-6 text-red-600">Error: {error}</p></HomeLayout>;
@@ -260,17 +268,46 @@ const RestaurantCardLayout: React.FC = () => {
                         </h1>
                         {isFavorited ? (
                             <FaStar
-                                onClick={() => setIsFavorited(false)}
+                                onClick={async () => {
+                                    const userInfoString = localStorage.getItem('userInfo');
+                                    if (!userInfoString || !restaurant) {
+                                        alert("You must be logged in to modify favorites.");
+                                        return;
+                                    }
+                                    const { id: userId } = JSON.parse(userInfoString);
+                                    try {
+                                        await unmarkAsFavorite(userId, restaurant.id);
+                                        setIsFavorited(false);
+                                    } catch (e) {
+                                        console.error("Failed to unfavorite:", e);
+                                        alert("Something went wrong. Try again.");
+                                    }
+                                }}
                                 className="text-yellow-400 cursor-pointer hover:text-yellow-500 transition-colors duration-300"
                                 size={28}
                             />
                         ) : (
                             <FaRegStar
-                                onClick={() => setIsFavorited(true)}
+                                onClick={async () => {
+                                    const userInfoString = localStorage.getItem('userInfo');
+                                    if (!userInfoString || !restaurant) {
+                                        alert("You must be logged in to modify favorites.");
+                                        return;
+                                    }
+                                    const { id: userId } = JSON.parse(userInfoString);
+                                    try {
+                                        await markAsFavorite(userId, restaurant.id);
+                                        setIsFavorited(true);
+                                    } catch (e) {
+                                        console.error("Failed to favorite:", e);
+                                        alert("Something went wrong. Try again.");
+                                    }
+                                }}
                                 className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors duration-300"
                                 size={28}
                             />
                         )}
+
                     </div>
 
                     {/* Section Title */}

@@ -71,3 +71,45 @@ export const fetchRestaurantReservations = async (restaurantId: string) => {
         throw error;
     }
 };
+
+export const fetchAcceptedReservationsByRestaurant = async (
+    restaurantId: string,
+    selectedStartTime: string,
+    selectedEndTime: string
+): Promise<string[]> => {  // returns array of UUID strings
+    try {
+        const token = localStorage.getItem('authToken');
+
+        const payload = {
+            restaurantId,
+            startTime: selectedStartTime,
+            endTime: selectedEndTime,
+        };
+
+        const response = await fetch('http://localhost:8000/reservations/reserved-tables', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.message || 'Failed to fetch reserved tables');
+        }
+
+        const reservedTableIds: string[] = await response.json();
+
+        if (!Array.isArray(reservedTableIds)) {
+            throw new Error('Unexpected response format: expected array of UUID strings');
+        }
+
+        // The backend returns reserved table IDs only, no need to filter by status here
+        return reservedTableIds;
+    } catch (error) {
+        console.error('Error fetching reserved tables:', error);
+        throw error;
+    }
+};

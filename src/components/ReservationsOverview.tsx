@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import CustomCalendar from '../components/Calendar.tsx';
+import {fetchRestaurantReservations} from "../utils/RestaurantApi.ts";
+import { useEffect } from "react";
+
 
 interface Table {
     isTable: boolean;
@@ -10,14 +13,76 @@ interface Table {
 interface ReservationsOverviewProps {
     grid: Table[][];
     toggleReservation: (rowIndex: number, colIndex: number) => void;
+    restaurantId: string;
 }
+
+
 
 const ReservationsOverview: React.FC<ReservationsOverviewProps> = ({
                                                                        grid,
                                                                        toggleReservation,
+                                                                       restaurantId,
                                                                    }) => {
+
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [selectedTimeBlock, setSelectedTimeBlock] = useState<string>("");
+    const [localGrid, setLocalGrid] = useState<Table[][]>(grid);
+
+
+    const generateTimeBlocks = () => [
+        { label: "5:00 PM - 6:30 PM", start: "17:00" },
+        { label: "6:30 PM - 8:00 PM", start: "18:30" },
+        { label: "8:00 PM - 9:30 PM", start: "20:00" },
+        { label: "9:30 PM - 11:00 PM", start: "21:30" },
+        { label: "1:00 AM - 2:30 AM", start: "01:00" },
+    ];
+
+    const timeBlocks = generateTimeBlocks();
+
+    useEffect(() => {
+        setLocalGrid(grid);
+    }, [grid]);
+
+    useEffect(() => {
+        const fetchAndMarkReservations = async () => {
+            if (!restaurantId || !selectedDate || !selectedTimeBlock) return;
+
+            try {
+                const data = await fetchRestaurantReservations(restaurantId);
+
+                const selectedDateString = selectedDate.toISOString().split("T")[0];
+
+                // Filter only relevant accepted reservations
+                const accepted = data.filter(
+                    (res: any) =>
+                        res.status === "ACCEPTED" &&
+                        res.date === selectedDateString &&
+                        res.time === selectedTimeBlock
+                );
+
+                const updatedGrid = localGrid.map((row, rowIndex) =>
+                    row.map((cell, colIndex) => {
+                        const isReserved = accepted.some(
+                            (res: any) =>
+                                res.table.row === rowIndex && res.table.col === colIndex
+                        );
+
+                        return {
+                            ...cell,
+                            reserved: isReserved,
+                        };
+                    })
+                );
+
+                setLocalGrid(updatedGrid);
+            } catch (err) {
+                console.error("Failed to fetch and apply reservations:", err);
+            }
+        };
+
+        fetchAndMarkReservations();
+    }, [restaurantId, selectedDate, selectedTimeBlock]);
 
     return (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg font-serif italic text-gray-800">
@@ -35,6 +100,19 @@ const ReservationsOverview: React.FC<ReservationsOverviewProps> = ({
                 {showCalendar ? "Hide Calendar" : "Show Calendar"}
             </button>
 
+            {/* Time Frame Dropdown */}
+            <select
+                value={selectedTimeBlock}
+                onChange={(e) => setSelectedTimeBlock(e.target.value)}
+                className="mb-6 ml-4 px-5 py-2 rounded-full bg-cream text-black border border-black hover:bg-black hover:text-cream transition font-semibold italic"
+            >
+                <option value="">Select Time Frame</option>
+                {timeBlocks.map((block) => (
+                    <option key={block.start} value={block.start}>
+                        {block.label}
+                    </option>
+                ))}
+            </select>
             {/* Calendar Section */}
             <div
                 id="calendar-container"
@@ -53,7 +131,7 @@ const ReservationsOverview: React.FC<ReservationsOverviewProps> = ({
 
             {/* Tables Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {grid.map((row, rowIndex) =>
+                {localGrid.map((row, rowIndex) =>
                     row.map((cell, colIndex) =>
                         cell.isTable ? (
                             <button
