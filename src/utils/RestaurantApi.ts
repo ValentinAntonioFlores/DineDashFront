@@ -60,10 +60,17 @@ export const getRestaurant = async (id: string) => {
 
 export const fetchRestaurantReservations = async (restaurantId: string) => {
     try {
+        const token = localStorage.getItem("token"); // Adjust the key if needed
+
         const response = await axios.post(
             `${BASE_URL}/reservations/by-restaurant`,
             { restaurantId },
-            { headers: { "Content-Type": "application/json" } }
+        {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
+            }
         );
         return response.data;
     } catch (error) {
@@ -71,6 +78,7 @@ export const fetchRestaurantReservations = async (restaurantId: string) => {
         throw error;
     }
 };
+
 
 export const fetchAcceptedReservationsByRestaurant = async (
     restaurantId: string,
@@ -113,3 +121,104 @@ export const fetchAcceptedReservationsByRestaurant = async (
         throw error;
     }
 };
+
+export const CreateRestaurantCategory = async (categoryData: { name: string; restaurantId: number }) => {
+    const response = await fetch('http://localhost:8000/categories', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(categoryData)  // ✅ use the data passed to the function
+    });
+
+    const data = await response.json();
+    console.log(data); // The created Category object
+    return data;
+};
+
+
+export interface Product {
+    id?: string;
+    name: string;
+    description: string;
+    price: number;
+    image: string;
+    category: string;
+    restaurantUser: {
+        idRestaurante: string;
+    };
+}
+
+export const AddProductByRestaurant = async (
+        product: {
+            name: string;
+            description: string;
+            price: number;
+            image: string;
+            category: string;
+            restaurantUser: {
+                idRestaurante: string;
+            };
+        }
+    ): Promise<Product> => {
+    const response = await fetch('http://localhost:8000/products', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to add product: ${response.status} - ${errorText}`);
+    }
+
+    const createdProduct: Product = await response.json();
+    return createdProduct;
+};
+
+export type Plate = {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    imageUrl: string;
+};
+
+
+// in RestaurantApi.ts
+export const fetchProductsByRestaurant = async (restaurantId: string): Promise<Plate[]> => {
+    const response = await axios.get(`http://localhost:8000/products/restaurant/${restaurantId}`);
+    console.log('response.data:', response.data);
+    return response.data.map((product: any) => ({
+        ...product,
+        imageUrl: product.image, // image -> imageUrl
+    }));
+};
+
+
+export type PlateUpdate = {
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    imageUrl?: string; // optional if your backend allows
+};
+
+export const updateProductById = async (
+    id: string,
+    updatedData: PlateUpdate
+): Promise<Plate> => {
+    const response = await axios.put(`http://localhost:8000/products/${id}`, {
+        ...updatedData,
+    });
+    return response.data;
+};
+
+export const deleteProductById = async (id: string): Promise<void> => {
+    await axios.delete(`http://localhost:8000/products/${id}`);
+};
+
+

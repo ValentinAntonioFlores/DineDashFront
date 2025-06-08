@@ -8,8 +8,7 @@ import HomeLayout from './HomeHeaderLayout.tsx';
 import { FaStar, FaRegStar} from 'react-icons/fa';
 import { ReservationReviewPopup } from '../components/ReservationReviewPopup'; // adjust the path if needed
 import { ReviewButton} from "../components/ReviewButton.tsx";
-
-
+import UserMenu from "../components/UserMenu.tsx";
 
 
 // DTO interfaces
@@ -143,6 +142,12 @@ const RestaurantCardLayout: React.FC = () => {
 
     }, [id, selectedDate, selectedTime, selectedTable, restaurant]);
 
+    const formatDateDisplay = (date: Date): string => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear()).slice(-2); // get last two digits of year
+        return `${day}/${month}/${year}`;
+    };
 
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -257,8 +262,9 @@ const RestaurantCardLayout: React.FC = () => {
 
     return (
         <HomeLayout>
+
             <div className="flex px-4 py-4">
-                {/* Left rectangle narrower (240px) with restaurant name on top */}
+            {/* Left rectangle narrower (240px) with restaurant name on top */}
                 <div className="w-full max-w-[280px] p-6 border border-gray-200 rounded-2xl shadow-lg bg-white h-full flex flex-col">
 
                     {/* Restaurant Name and Favorite Star */}
@@ -445,6 +451,10 @@ const RestaurantCardLayout: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+            {/* UserMenu just below the grid card */}
+            <div className="mt-4">
+                <UserMenu restaurantId={id ?? ''} />
             </div>
 
             <ReviewButton onClick={() => setShowReviewPopUp(true)} />

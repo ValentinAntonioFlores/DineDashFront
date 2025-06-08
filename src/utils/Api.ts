@@ -334,9 +334,61 @@ export async function fetchUserFavoritesForHome(userId: string): Promise<string[
 }
 
 
+export async function getUserById(userId: string): Promise<{ id: string; firstName: string; lastName: string; email: string } | null> {
+    try {
+        const token = localStorage.getItem("token"); // Or wherever you store your auth token
+
+        const res = await fetch(`http://localhost:8000/restaurants/client-info/${userId}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            }
+        });
+
+        if (res.status === 404) {
+            // User not found
+            return null;
+        }
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch user");
+        }
+
+        return await res.json();
+    } catch (error) {
+        console.error("Error fetching user by ID:", error);
+        throw error;
+    }
+}
 
 
+export interface ReviewDTO {
+    id: string;
+    clientId: string;
+    restaurantId: string;
+    isPositive: boolean;
+    createdAt: string;
+}
 
+export const createRestaurantToClientReview = (
+    clientId: string,
+    restaurantId: string,
+    isPositive: boolean
+): Promise<ReviewDTO> => {
+    const params = new URLSearchParams({
+        clientId,
+        restaurantId,
+        isPositive: isPositive.toString(),
+    });
+
+    return fetch(`http://localhost:8000/reviews/restaurant-to-client?${params.toString()}`, {
+        method: "POST",
+    })
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to create review");
+            return res.json();
+        });
+};
 
 
 

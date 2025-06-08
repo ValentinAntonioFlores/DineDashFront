@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { fetchRestaurantReservations } from "../utils/RestaurantApi.ts";
 import { format } from "date-fns";
+import {UserReviewComponent}  from "./UserInformation.tsx"; // adjust path as needed
 
 
 type Reservation = {
     reservationId: string;
+    userId: string; // Add this!
     clientUserName: string;
     tableId: string;
     status: string;
@@ -32,6 +34,10 @@ const RestaurantReservations = () => {
     const [filterDate, setFilterDate] = useState<string>("");
     const [filterStartTime, setFilterStartTime] = useState<string>("");
     const [filterEndTime, setFilterEndTime] = useState<string>("");
+
+    const [userDropdownOpenId, setUserDropdownOpenId] = useState<string | null>(null);
+    const userDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
 
 
 
@@ -71,6 +77,19 @@ const RestaurantReservations = () => {
         }
     };
 
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+
     const isInTimeBlock = (reservationStart: Date, reservationEnd: Date, blockStart: string, blockEnd: string) => {
         const resStart = reservationStart.getHours() * 60 + reservationStart.getMinutes();
         const resEnd = reservationEnd.getHours() * 60 + reservationEnd.getMinutes();
@@ -90,17 +109,19 @@ const RestaurantReservations = () => {
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target as Node)
+                userDropdownOpenId &&
+                userDropdownRefs.current[userDropdownOpenId] &&
+                !userDropdownRefs.current[userDropdownOpenId]!.contains(event.target as Node)
             ) {
-                setDropdownOpen(false);
+                setUserDropdownOpenId(null);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, []);
+    }, [userDropdownOpenId]);
+
 
     const filteredReservations = reservations.filter((r) => {
         const matchesStatus = filter === "ALL" || r.status === filter;
@@ -221,6 +242,7 @@ const RestaurantReservations = () => {
             </div>
 
             {/* Reservation List */}
+
             {filteredReservations.length === 0 ? (
                 <p className="text-gray-500 italic">
                     No reservations {filter !== "ALL" ? `with status ${filter}` : ""}.
@@ -232,13 +254,50 @@ const RestaurantReservations = () => {
                             key={res.reservationId}
                             className="flex justify-between items-center bg-white border border-gray-200 p-5 rounded-xl shadow-sm hover:shadow-md transition"
                         >
-                            <div className="space-y-1">
-                                <p className="text-sm text-gray-600">
-                                    <span className="font-semibold text-gray-800">User:</span>{" "}
+                            <div
+                                className="space-y-1 relative"
+                                ref={(el) => (userDropdownRefs.current[res.reservationId] = el)}
+                            >
+                                <p
+                                    className="text-sm text-gray-600 flex items-center cursor-pointer select-none"
+                                    onClick={() => {
+                                        setUserDropdownOpenId(
+                                            (prev) => (prev === res.reservationId ? null : res.reservationId)
+                                        );
+                                    }}
+                                >
+                                    {/* User icon */}
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="w-5 h-5 text-gray-500 mr-2"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke="none"
+                                    >
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+                                        <path d="M6 20v-2c0-2.21 3.58-4 6-4s6 1.79 6 4v2" />
+                                    </svg>
+
+                                    <span className="font-semibold text-gray-800 mr-1">User:</span>
                                     {res.clientUserName}
                                 </p>
+
+                                {/* User review dropdown */}
+
+                                {userDropdownOpenId === res.reservationId && (
+                                    <>
+                                        {console.log("Opening review for userId:", res.userId, "restaurantId:", restaurantId)}
+                                        <div className="absolute top-full mt-1 left-0 z-30 bg-white border border-gray-300 rounded shadow-lg p-4 w-72">
+                                            <UserReviewComponent
+                                                userId={res.userId}
+                                                restaurantId={restaurantId}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
                                 <p className="text-sm text-gray-600">
-                                <span className="font-semibold text-gray-800">Start Time:</span>{" "}
+                                    <span className="font-semibold text-gray-800">Start Time:</span>{" "}
                                     {formatDateTime(res.startTime)}
                                 </p>
                                 <p className="text-sm text-gray-600">
@@ -246,8 +305,7 @@ const RestaurantReservations = () => {
                                     {formatDateTime(res.endTime)}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    <span className="font-semibold text-gray-800">Table:</span>{" "}
-                                    {res.tableId}
+                                    <span className="font-semibold text-gray-800">Table:</span> {res.tableId}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     <span className="font-semibold text-gray-800">Status:</span>{" "}
@@ -260,8 +318,8 @@ const RestaurantReservations = () => {
                                                     : "bg-yellow-100 text-yellow-800"
                                         }`}
                                     >
-                {res.status}
-              </span>
+          {res.status}
+        </span>
                                 </p>
                             </div>
                             <div className="flex space-x-3">
@@ -270,18 +328,19 @@ const RestaurantReservations = () => {
                                     className="text-green-600 hover:text-green-800 transition transform hover:scale-110"
                                     title="Accept"
                                 >
-                                    ✅
+                                    ACCEPT
                                 </button>
                                 <button
                                     onClick={() => updateStatus(res.reservationId, "REJECTED")}
                                     className="text-red-600 hover:text-red-800 transition transform hover:scale-110"
                                     title="Reject"
                                 >
-                                    ❌
+                                    REJECT
                                 </button>
                             </div>
                         </div>
                     ))}
+
                 </div>
             )}
         </div>

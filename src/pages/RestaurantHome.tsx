@@ -127,9 +127,6 @@ const RestaurantHome: React.FC = () => {
         setGrid((prevGrid) => {
             const newGrid = prevGrid.map((r, rowIndex) =>
                 r.map((cell, colIndex) => {
-                    // Prevent toggling reserved cells
-                    // if (cell.reserved) return cell;
-
                     return rowIndex === row && colIndex === col
                         ? {
                             ...cell,
