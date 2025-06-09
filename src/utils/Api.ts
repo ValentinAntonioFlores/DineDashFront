@@ -390,5 +390,26 @@ export const createRestaurantToClientReview = (
         });
 };
 
+export async function fetchCategories(): Promise<{ restaurantId: string; name: string }[]> {
+    const response = await fetch('http://localhost:8000/categories');
+    if (!response.ok) throw new Error("Failed to fetch categories");
+    return response.json();
+}
+
+export const getAverageRating = async (restaurantId: string): Promise<number> => {
+    try {
+        const response = await fetch(`http://localhost:8000/restaurant/${restaurantId}/average-rating`);
+        if (!response.ok) throw new Error("Failed to fetch average rating");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return 0;
+    }
+};
+
+
+
+
+
 
 

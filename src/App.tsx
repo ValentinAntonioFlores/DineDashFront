@@ -10,6 +10,8 @@ import UserConfiguration from './pages/UserConfiguration.tsx';
 import ProtectedRoutes from './components/ProtectedRoutes.tsx';
 import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
 import RestaurantCardLayout from "./layouts/RestaurantCardLayout.tsx";
+import SearchResults from "./components/SearchResults.tsx";
+import AllRestaurantsPage from "./components/AllRestaurantsPage.tsx";
 
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
@@ -24,6 +26,9 @@ function App() {
                 <Route path="/signin" element={<SignInForm />} />
                 <Route path="/restaurant-signup" element={<RestaurantSignUp />} />
                 <Route path="/RestaurantSignIn" element={<RestaurantSignIn />} />
+                <Route path="/search" element={<SearchResults />} />
+                <Route path="/restaurants" element={<AllRestaurantsPage />} />
+
 
 
                 {/* Protected Routes */}

@@ -5,6 +5,9 @@ import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
 import { fetchPublicRestaurants, fetchUserFavoritesForHome } from '../utils/Api.ts';
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useAuth } from '../hooks/useAuth.tsx';
+import SearchResults from "../components/SearchResults.tsx";
+import { ArrowRight } from "lucide-react";
+
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -63,14 +66,30 @@ const Home: React.FC = () => {
         </>
     );
 
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
+
+
     const searchForm = (
-        <form className="w-full max-w-xl mx-auto mt-6">
+        <form
+            onSubmit={handleSearchSubmit}
+            className="w-full max-w-xl mx-auto mt-6"
+        >
             <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar restaurantes..."
                 className="w-full px-5 py-3 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
         </form>
+
     );
 
 
@@ -106,7 +125,15 @@ const Home: React.FC = () => {
 
     const section1 = (
         <>
-            <h2 className="text-2xl font-semibold mb-6">Todos los Restaurantes</h2>
+            <div
+                onClick={() => navigate("/restaurants")}
+                className="w-fit px-6 py-4 bg-white shadow-md hover:shadow-lg rounded-2xl border border-gray-200 cursor-pointer transition-all duration-300 flex items-center gap-3 group"
+            >
+                <h2 className="text-xl font-semibold text-gray-800 group-hover:text-primary">
+                    Todos los Restaurantes
+                </h2>
+                <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-transform group-hover:translate-x-1" />
+            </div>
             <div className="relative">
                 {/* Left Arrow */}
                 <button
