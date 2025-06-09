@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { fetchPublicRestaurants, fetchCategories} from "../utils/Api";
+import { fetchPublicRestaurants, fetchCategories } from "../utils/Api";
 import { useNavigate } from "react-router-dom";
 import HomeLayout from "../layouts/HomeHeaderLayout";
+import { useLocation } from "react-router-dom";
+
 
 type Restaurant = {
     id: string;
     name: string;
     imageUrl?: string;
-    categories: string[];    // changed from category?: string to categories: string[]
+    categories: string[];
     rating?: number;
 };
 
@@ -17,42 +19,45 @@ const AllRestaurantsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [minRating, setMinRating] = useState(0);
+    const location = useLocation();
 
     const navigate = useNavigate();
-
     const [categories, setCategories] = useState<{ id: string; name: string; restaurantId: string }[]>([]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const queryParam = params.get("query") || "";
+        const categoryParam = params.get("category") || "";
+
+        setSearchTerm(queryParam);
+        setSelectedCategory(categoryParam);
+    }, [location.search]);
+
+
 
     useEffect(() => {
         Promise.all([fetchPublicRestaurants(), fetchCategories()])
             .then(async ([restaurantsData, categoriesData]) => {
-                // Create a category map: restaurantId => category names
                 const categoryMap = new Map<string, string[]>();
                 categoriesData.forEach(cat => {
-                    if (!categoryMap.has(cat.restaurantId)) {
-                        categoryMap.set(cat.restaurantId, []);
-                    }
+                    if (!categoryMap.has(cat.restaurantId)) categoryMap.set(cat.restaurantId, []);
                     categoryMap.get(cat.restaurantId)!.push(cat.name);
                 });
 
-                // Fetch ratings in parallel
                 const enriched = restaurantsData.map((r: any) => ({
                     id: r.id,
                     name: r.name,
                     imageUrl: r.imageUrl,
                     categories: categoryMap.get(r.id) || ["Categoría desconocida"],
-                    rating: r.averageRating,  // directly from backend now!
+                    rating: r.averageRating,
                 }));
-
 
                 setRestaurants(enriched);
                 setFilteredRestaurants(enriched);
                 setCategories(categoriesData);
             })
-            .catch((err) => {
-                console.error("Error fetching data:", err);
-            });
+            .catch((err) => console.error("Error fetching data:", err));
     }, []);
-
 
     useEffect(() => {
         let filtered = restaurants;
@@ -74,7 +79,6 @@ const AllRestaurantsPage: React.FC = () => {
         setFilteredRestaurants(filtered);
     }, [searchTerm, selectedCategory, minRating, restaurants]);
 
-    // Get unique category names for dropdown
     const categoryNames = Array.from(new Set(categories.map((cat) => cat.name)));
 
     const clearFilters = () => {
@@ -83,16 +87,17 @@ const AllRestaurantsPage: React.FC = () => {
         setMinRating(0);
     };
 
+
+
     return (
         <HomeLayout>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex gap-8">
-                {/* Sidebar Filters on the LEFT */}
-                <aside className="w-72 bg-white p-6 rounded-2xl shadow-md sticky top-20 self-start">
-                    <h3 className="text-xl font-semibold mb-4">Filtros</h3>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-                    <div className="mb-6">
-                        <label htmlFor="search" className="block text-gray-700 font-medium mb-1">
-                            Buscar por nombre
+                {/* Modern Filter Bar */}
+                <div className="bg-white rounded-3xl shadow-md p-6 mb-8 flex flex-wrap gap-6 items-end">
+                    <div className="flex flex-col">
+                        <label htmlFor="search" className="text-sm font-medium text-gray-700 mb-1">
+                            🔍 Buscar por nombre
                         </label>
                         <input
                             id="search"
@@ -100,19 +105,19 @@ const AllRestaurantsPage: React.FC = () => {
                             placeholder="Ej. La Trattoria"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-xl px-4 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                         />
                     </div>
 
-                    <div className="mb-6">
-                        <label htmlFor="category" className="block text-gray-700 font-medium mb-1">
-                            Categoría
+                    <div className="flex flex-col">
+                        <label htmlFor="category" className="text-sm font-medium text-gray-700 mb-1">
+                            🏷️ Categoría
                         </label>
                         <select
                             id="category"
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-xl px-4 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                         >
                             <option value="">Todas</option>
                             {categoryNames.map((catName) => (
@@ -123,15 +128,15 @@ const AllRestaurantsPage: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="mb-6">
-                        <label htmlFor="rating" className="block text-gray-700 font-medium mb-1">
-                            Calificación mínima
+                    <div className="flex flex-col">
+                        <label htmlFor="rating" className="text-sm font-medium text-gray-700 mb-1">
+                            ⭐ Calificación mínima
                         </label>
                         <select
                             id="rating"
                             value={minRating}
                             onChange={(e) => setMinRating(Number(e.target.value))}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-xl px-4 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                         >
                             <option value={0}>Cualquiera</option>
                             {[1, 2, 3, 4, 5].map((r) => (
@@ -144,64 +149,60 @@ const AllRestaurantsPage: React.FC = () => {
 
                     <button
                         onClick={clearFilters}
-                        className="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
+                        className="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600 transition-all mt-6"
                     >
                         Limpiar filtros
                     </button>
-                </aside>
-
-                {/* Restaurant List on the RIGHT */}
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold mb-6 text-gray-900">
-                        Todos los Restaurantes
-                    </h1>
-
-                    {filteredRestaurants.length === 0 ? (
-                        <div className="text-center text-gray-500 mt-32 text-lg">
-                            😕 No hay restaurantes que coincidan con los filtros.
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-6">
-                            {filteredRestaurants.map(({ id, name, imageUrl, categories, rating }) => (
-                                <div
-                                    key={id}
-                                    onClick={() => navigate(`/restaurant/${id}/layout`)}
-                                    className="flex flex-col md:flex-row gap-4 items-start p-4 bg-white rounded-2xl shadow hover:shadow-md transition cursor-pointer"
-                                >
-                                    {imageUrl ? (
-                                        <img
-                                            src={
-                                                imageUrl.startsWith("data:")
-                                                    ? imageUrl
-                                                    : `data:image/jpeg;base64,${imageUrl}`
-                                            }
-                                            alt={name}
-                                            className="w-full md:w-48 h-40 object-cover rounded-xl"
-                                        />
-                                    ) : (
-                                        <div className="w-full md:w-48 h-40 bg-gray-200 flex items-center justify-center rounded-xl text-sm text-gray-500">
-                                            Sin imagen
-                                        </div>
-                                    )}
-
-                                    <div className="flex-1">
-                                        <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {categories.join(", ") || "Categoría desconocida"}
-                                        </p>
-                                        <p className="text-sm text-gray-400 mt-1">
-                                            ⭐ {rating?.toFixed(1) ?? "N/A"} · 120 reseñas
-                                        </p>
-                                        <p className="text-sm text-gray-600 mt-3 line-clamp-3">
-                                            Vive una experiencia gastronómica inolvidable con platos únicos,
-                                            ambiente acogedor y atención de primera.
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
+
+                {/* Título */}
+                <h1 className="text-3xl font-bold text-gray-900 mb-6">🍽️ Todos los Restaurantes</h1>
+
+                {/* Resultados */}
+                {filteredRestaurants.length === 0 ? (
+                    <div className="text-center text-gray-500 mt-32 text-lg">
+                        😕 No hay restaurantes que coincidan con los filtros.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {filteredRestaurants.map(({ id, name, imageUrl, categories, rating }) => (
+                            <div
+                                key={id}
+                                onClick={() => navigate(`/restaurant/${id}/layout`)}
+                                className="bg-white rounded-3xl shadow hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+                            >
+                                {imageUrl ? (
+                                    <img
+                                        src={
+                                            imageUrl.startsWith("data:")
+                                                ? imageUrl
+                                                : `data:image/jpeg;base64,${imageUrl}`
+                                        }
+                                        alt={name}
+                                        className="w-full h-48 object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+                                        Sin imagen
+                                    </div>
+                                )}
+                                <div className="p-4">
+                                    <h2 className="text-lg font-semibold text-gray-800">{name}</h2>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {categories.map((cat) => (
+                                            <span key={cat} className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
+                        {cat}
+                      </span>
+                                        ))}
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        ⭐ {rating?.toFixed(1) ?? "N/A"} • Experiencia gastronómica única
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </HomeLayout>
     );

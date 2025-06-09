@@ -2,10 +2,9 @@ import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from "react-router-dom";
 import HomePageLayout from '../layouts/HomePageLayout';
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
-import { fetchPublicRestaurants, fetchUserFavoritesForHome } from '../utils/Api.ts';
+import { fetchPublicRestaurants, fetchUserFavoritesForHome, fetchCategories } from '../utils/Api.ts';
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useAuth } from '../hooks/useAuth.tsx';
-import SearchResults from "../components/SearchResults.tsx";
 import { ArrowRight } from "lucide-react";
 
 
@@ -19,6 +18,8 @@ const Home: React.FC = () => {
     const [favoriteRestaurants, setFavoriteRestaurants] = useState<
         { id: string; name: string; imageUrl?: string }[]
     >([]);
+
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
     const { userData } = useAuth();
 
@@ -35,11 +36,12 @@ const Home: React.FC = () => {
                     }))
                 );
 
+                const fetchedCategories = await fetchCategories();
+                setCategories(fetchedCategories);
+
                 if (!userData?.id) return;
 
                 const favoriteIds = await fetchUserFavoritesForHome(userData.id);
-                console.log("Fetched favorite IDs:", favoriteIds);
-
                 const favorites = publicData.filter(r => favoriteIds.includes(r.id));
                 setFavoriteRestaurants(
                     favorites.map(r => ({
@@ -49,11 +51,16 @@ const Home: React.FC = () => {
                     }))
                 );
             } catch (error) {
-                console.error("Error fetching restaurants or favorites:", error);
+                console.error("Error fetching restaurants, favorites or categories:", error);
             }
         })();
     }, [userData]);
 
+
+    const uniqueCategories = categories.filter(
+        (cat, index, self) =>
+            index === self.findIndex(c => c.name.toLowerCase() === cat.name.toLowerCase())
+    );
 
     const heroContent = (
         <>
@@ -71,9 +78,10 @@ const Home: React.FC = () => {
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            navigate(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+            navigate(`/restaurants?query=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
+
 
 
     const searchForm = (
@@ -248,19 +256,21 @@ const Home: React.FC = () => {
 
     const section2 = (
         <>
-            <h2 className="text-2xl font-semibold">Explora por categoría</h2>
-            <div className="flex flex-wrap gap-4">
-                {['Pizza', 'Sushi', 'Vegano', 'Parrilla'].map(cat => (
+            <h2 className="text-2xl font-semibold mb-4">Explora por categoría</h2>
+            <div className="flex flex-wrap gap-3">
+                {uniqueCategories.map(({ id, name }) => (
                     <span
-                        key={cat}
-                        className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200"
+                        key={id}
+                        onClick={() => navigate(`/restaurants?category=${encodeURIComponent(name)}`)}
+                        className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition"
                     >
-                        {cat}
-                    </span>
+                {name}
+            </span>
                 ))}
             </div>
         </>
     );
+
 
     const footer = (
         <p>© {new Date().getFullYear()} TuApp. Todos los derechos reservados.</p>
