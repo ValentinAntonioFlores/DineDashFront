@@ -274,3 +274,39 @@ export const fetchRestaurantLocation = async (restaurantId: string): Promise<Loc
     }
 };
 
+
+export interface ReviewDTO {
+    id: string;
+    clientId: string;
+    restaurantId: string;
+    isPositive: boolean;
+    // Add other fields you might have in your ReviewDTO, e.g.:
+    // starRating?: number | null; // For client-to-restaurant reviews
+    reviewType: 'CLIENT_TO_RESTAURANT' | 'RESTAURANT_TO_CLIENT'; // Make sure this is in your DTO
+    createdAt: string; // From your Spring Boot DTO, assuming it has a createdAt field
+}
+export const fetchRestaurantReviewsForClient = (
+    clientId: string
+): Promise<ReviewDTO[]> => { // Returns an array of ReviewDTOs
+    return fetch(`http://localhost:8000/reviews/client/${clientId}/restaurant-reviews`, {
+        method: "GET", // Explicitly define GET method, though it's default for fetch
+    })
+        .then((res) => {
+            if (!res.ok) {
+                // You can add more detailed error handling here based on status code
+                if (res.status === 404) {
+                    throw new Error(`Client with ID ${clientId} not found or no reviews.`);
+                }
+                throw new Error(`Failed to fetch restaurant reviews for client. Status: ${res.status}`);
+            }
+            return res.json();
+        })
+        .then((data: ReviewDTO[]) => {
+            // Optional: You can do some data transformation here if needed
+            return data;
+        })
+        .catch((error) => {
+            console.error("Error fetching restaurant reviews for client:", error);
+            throw error; // Re-throw to allow component to catch and display
+        });
+};

@@ -222,7 +222,7 @@ const Home: React.FC = () => {
     );
     const sectionFavorites = favoriteRestaurants.length > 0 && (
         <>
-            <h2 className="text-2xl font-semibold mb-6 mt-12"> Favorite Restaurants </h2>
+            <h2 className="text-2xl font-semibold mb-6 mt-12"> Restaurantes Favoritos </h2>
             <div className="flex overflow-x-auto space-x-6 scrollbar-hide snap-x snap-mandatory scroll-smooth px-1">
                 {favoriteRestaurants.map(({ id, name, imageUrl }) => (
                     <div
@@ -279,7 +279,7 @@ const Home: React.FC = () => {
 
 
     const footer = (
-        <p>© {new Date().getFullYear()} TuApp. Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} DineDash. Todos los derechos reservados.</p>
     );
 
     return (

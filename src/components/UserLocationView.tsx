@@ -101,7 +101,7 @@ const UserLocationView: React.FC = () => {
 
     return (
         <div style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
-            <h2 className="text-center text-blue-700 mb-4">User Location</h2>
+            <h2 className="text-center text-blue-700 mb-4"> Mapa </h2>
 
             <MapContainer
                 center={location ? [location.latitude, location.longitude] : [0, 0]}

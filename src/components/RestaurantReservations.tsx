@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { fetchRestaurantReservations } from "../utils/RestaurantApi.ts";
-import { format } from "date-fns";
+import { fetchRestaurantReservations} from "../utils/RestaurantApi.ts";
 import {UserReviewComponent}  from "./UserInformation.tsx"; // adjust path as needed
-
+import ClientReviewSummary from "./ClientReviewSummary.tsx";
 
 type Reservation = {
     reservationId: string;
@@ -280,6 +279,8 @@ const RestaurantReservations = () => {
 
                                     <span className="font-semibold text-gray-800 mr-1">User:</span>
                                     {res.clientUserName}
+                                    {/* NEW: Display the review summary here */}
+
                                 </p>
 
                                 {/* User review dropdown */}
@@ -295,7 +296,12 @@ const RestaurantReservations = () => {
                                         </div>
                                     </>
                                 )}
-
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-semibold text-gray-800">User Rating:</span>{" "}
+                                    <span className="ml-2">
+                                        <ClientReviewSummary clientId={res.userId} />
+                                    </span>
+                                </p>
                                 <p className="text-sm text-gray-600">
                                     <span className="font-semibold text-gray-800">Start Time:</span>{" "}
                                     {formatDateTime(res.startTime)}

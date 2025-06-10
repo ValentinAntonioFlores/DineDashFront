@@ -48,6 +48,29 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
         loadReservations();
     }, [selectedCard, userId]);
 
+    const formatDateTime = (isoString: string) => {
+        if (!isoString) return 'N/A'; // Handle cases where string might be empty or null
+        const date = new Date(isoString);
+
+        // Options for toLocaleDateString
+        const dateOptions: Intl.DateTimeFormatOptions = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        };
+
+        // Options for toLocaleTimeString
+        const timeOptions: Intl.DateTimeFormatOptions = {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false, // Use 24-hour format
+        };
+
+        const formattedDate = date.toLocaleDateString('en-GB', dateOptions); // e.g., 10/06/2025
+        const formattedTime = date.toLocaleTimeString('en-GB', timeOptions); // e.g., 21:30
+
+        return `${formattedDate}, ${formattedTime}`;
+    };
     const handleDeleteAccount = async () => {
         if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
 
@@ -247,9 +270,10 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                         <div key={i} className="bg-white border rounded-lg p-4 shadow-sm transition hover:shadow-md">
                                             <p className="text-sm text-gray-500">Reservation #{i + 1}</p>
                                             <p className="mt-1"><span className="font-semibold">Restaurant:</span> {res.restaurantName}</p>
-                                            <p><span className="font-semibold">Date:</span> {res.date}</p>
-                                            <p><span className="font-semibold">Time:</span> {res.time}</p>
-                                            <p><span className="font-semibold">Table:</span> {res.tableId}</p>
+                                            {/* --- APPLY FORMATTING HERE --- */}
+                                            <p><span className="font-semibold">Start Time:</span> {formatDateTime(res.startTime)}</p>
+                                            <p><span className="font-semibold">End Time:</span> {formatDateTime(res.endTime)}</p>
+                                            {/* --- END APPLY FORMATTING --- */}
                                             <p><span className="font-semibold">Status:</span> <span className={`px-2 py-1 text-xs rounded ${
                                                 res.reservationStatus === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
                                                     res.reservationStatus === 'REJECTED' ? 'bg-red-100 text-red-700' :

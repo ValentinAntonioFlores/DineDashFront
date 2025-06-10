@@ -42,13 +42,7 @@ export default function HomeLayout({ children }: Props) {
                 </div>
 
                 {/* Center: Search */}
-                <div className="hidden md:block w-1/3">
-                    <input
-                        type="text"
-                        placeholder="Buscar restaurantes..."
-                        className="w-full px-4 py-2 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                    />
-                </div>
+
 
                 {/* Right: Notifications + Avatar */}
                 <div className="flex items-center gap-4">

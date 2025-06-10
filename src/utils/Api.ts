@@ -462,6 +462,36 @@ export const fetchClientUserLocation = async (
     }
 };
 
+export const markNotificationsSeenByIds = async (reservationIds: string[]): Promise<boolean> => {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        // This POST request correctly targets the new backend endpoint
+        // and sends an array of reservation IDs in the request body.
+        const response = await axios.post(
+            `http://localhost:8000/reservations/mark-notifications-seen-by-ids`, // Updated URL
+            reservationIds, // Sending the array of IDs in the request body
+            {
+                headers: {
+                    'Content-Type': 'application/json', // Crucial for sending a JSON array
+                    Authorization: token ? `Bearer ${token}` : '', // Include auth token if available
+                },
+            }
+        );
+
+        // The backend returns ResponseEntity<Void>, so we check the HTTP status code for success.
+        if (response.status === 200) {
+            console.log(`Notifications with IDs [${reservationIds.join(', ')}] marked as SEEN.`);
+            return true; // Indicate successful operation
+        } else {
+            console.warn(`Unexpected response status ${response.status} when marking notifications seen by IDs.`);
+            return false; // Indicate that the operation might not have been successful
+        }
+    } catch (error) {
+        console.error(`Error marking notifications seen by IDs:`, error);
+        throw error; // Re-throw the error for upstream error handling
+    }
+};
 
 
 

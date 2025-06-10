@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchUserReservations } from "../utils/Api.ts";
+import { fetchUserReservations, markNotificationsSeenByIds } from "../utils/Api.ts"; // Import the new function
 
 interface Notification {
-    id: string;
+    reservationId: string;
     reservationStatus: string;
     restaurantName: string;
+    // Add notificationStatus to the interface as returned by your backend
+    notificationStatus: 'NOT_SEEN' | 'SEEN'; // Using explicit literals for type safety
     updatedAt: string;
+    startTime: string;
 }
 
 interface NotificationBellProps {
@@ -15,13 +18,36 @@ interface NotificationBellProps {
 export default function NotificationBell({ userId }: NotificationBellProps) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
-    const [seenUpdated, setSeenUpdated] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Helper function for consistent date/time formatting
+    const formatDateTime = (isoString: string) => {
+        if (!isoString) return 'N/A';
+        const date = new Date(isoString);
+
+        const dateOptions: Intl.DateTimeFormatOptions = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        };
+        const timeOptions: Intl.DateTimeFormatOptions = {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false, // Use 24-hour format
+        };
+
+        const formattedDate = date.toLocaleDateString('en-GB', dateOptions);
+        const formattedTime = date.toLocaleTimeString('en-GB', timeOptions);
+
+        return `${formattedDate}, ${formattedTime}`;
+    };
 
     // Fetch and filter notifications by status, sort newest first
     const loadNotifications = async () => {
         try {
-            const res = await fetchUserReservations(userId);
+            // fetchUserReservations should return Notification[] including notificationStatus
+            const res: Notification[] = await fetchUserReservations(userId);
+
             const filtered = res
                 .filter(
                     (r: Notification) =>
@@ -53,31 +79,57 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                 dropdownRef.current &&
                 !dropdownRef.current.contains(event.target as Node)
             ) {
-                setShowDropdown(false);
+                // When clicking outside, treat it as closing the bell
+                // and mark notifications as seen.
+                if (showDropdown) { // Only run if dropdown was actually open
+                    handleCloseDropdown();
+                }
             }
         }
 
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    }, [showDropdown, userId]); // Add showDropdown and userId to dependency array
 
-    // Toggle dropdown and mark notifications as seen
-    const toggleDropdown = () => {
-        if (!showDropdown) {
-            const seen = JSON.parse(localStorage.getItem("seenNotifications") || "[]");
-            const currentIds = notifications.map((n) => n.id);
-            const updatedSeen = Array.from(new Set([...seen, ...currentIds]));
-            localStorage.setItem("seenNotifications", JSON.stringify(updatedSeen));
-            setSeenUpdated((v) => !v); // trigger re-render for unseen count
+    // Function to handle closing the dropdown and marking notifications as seen
+    const handleCloseDropdown = async () => {
+        try {
+            // Get the IDs of all currently displayed notifications that are NOT_SEEN
+            const unseenNotificationIds = notifications
+                .filter(n => n.notificationStatus.toUpperCase() === "NOT_SEEN")
+                .map(n => n.reservationId);
+
+            if (unseenNotificationIds.length > 0) {
+                // Call the backend to mark these specific notifications as seen
+                await markNotificationsSeenByIds(unseenNotificationIds);
+            }
+
+            // After marking as seen, reload notifications to get the updated status
+            // This will also cause the `unseenCount` to update (to 0 if all were marked seen)
+            await loadNotifications();
+        } catch (error) {
+            console.error("Failed to mark notifications as seen:", error);
+            // Optionally, handle error state or show a message to the user
+        } finally {
+            setShowDropdown(false); // Always close the dropdown
         }
-        setShowDropdown(!showDropdown);
     };
 
-    // Calculate count of unseen notifications
-    const unseenCount = (() => {
-        const seen = JSON.parse(localStorage.getItem("seenNotifications") || "[]");
-        return notifications.filter((n) => !seen.includes(n.id)).length;
-    })();
+    // Toggle dropdown
+    const toggleDropdown = () => {
+        if (showDropdown) {
+            // If currently open, user is clicking to close it
+            handleCloseDropdown();
+        } else {
+            // If currently closed, user is clicking to open it
+            setShowDropdown(true);
+        }
+    };
+
+    // Calculate count of unseen notifications based on backend status
+    const unseenCount = notifications.filter(
+        (n) => n.notificationStatus.toUpperCase() === "NOT_SEEN"
+    ).length;
 
     return (
         <div className="relative">
@@ -102,8 +154,8 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
 
                 {unseenCount > 0 && (
                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-            {unseenCount}
-          </span>
+                        {unseenCount}
+                    </span>
                 )}
             </button>
 
@@ -122,17 +174,22 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                         <ul className="max-h-60 overflow-y-auto">
                             {notifications.map((notif) => (
                                 <li
-                                    key={notif.id}
+                                    key={notif.reservationId}
                                     className={`
-    flex items-center space-x-3 p-3 mb-2 rounded-md
-    border border-gray-200
-    ${
+                                        flex items-center space-x-3 p-3 mb-2 rounded-md
+                                        border border-gray-200
+                                        ${
                                         notif.reservationStatus.toUpperCase() === "ACCEPTED"
                                             ? "bg-green-50 text-green-700 border-green-300"
                                             : "bg-red-50 text-red-700 border-red-300"
                                     }
-    hover:shadow-md transition-shadow duration-200
-  `}
+                                        hover:shadow-md transition-shadow duration-200
+                                        ${
+                                        notif.notificationStatus.toUpperCase() === "SEEN"
+                                            ? "opacity-60" // Dim seen notifications
+                                            : "font-bold" // Make unseen notifications stand out
+                                    }
+                                    `}
                                 >
                                     {/* Status icon */}
                                     {notif.reservationStatus.toUpperCase() === "ACCEPTED" ? (
@@ -163,13 +220,18 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                                         </svg>
                                     )}
 
-                                    {/* Message */}
-                                    <p className="flex-1 text-sm font-medium leading-tight">
-                                        Your reservation at <strong>{notif.restaurantName}</strong> was{" "}
-                                        <span className="capitalize font-semibold">{notif.reservationStatus}</span>.
-                                    </p>
+                                    {/* Message content */}
+                                    <div className="flex-1 text-sm font-medium leading-tight">
+                                        <p>
+                                            Your reservation at <strong>{notif.restaurantName}</strong>{" "}
+                                            for <span className="font-semibold">{formatDateTime(notif.startTime)}</span> was{" "}
+                                            <span className="capitalize font-semibold">{notif.reservationStatus}</span>.
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Updated: {formatDateTime(notif.updatedAt)}
+                                        </p>
+                                    </div>
                                 </li>
-
                             ))}
                         </ul>
                     )}
