@@ -9,9 +9,10 @@ import {getRestaurant, saveRestaurant} from "../utils/RestaurantApi.ts";
 import RestaurantReservations from "../components/RestaurantReservations.tsx";
 import { motion } from "framer-motion";
 import Menu from "../components/Menu.tsx";
+import Map from "../components/Map.tsx";
 
 const RestaurantHome: React.FC = () => {
-    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" | "menu" | "logout">("image");
+    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" | "menu" | "map" | "logout">("image");
     const [grid, setGrid] = useState<Table[][]>(
         Array.from({ length: 10 }, () =>
             Array.from({ length: 10 }, () => ({ isTable: false, seats: 0, reserved: false }))
@@ -154,6 +155,7 @@ const RestaurantHome: React.FC = () => {
                     { label: "Reservations", value: "reservations", icon: "📅" },
                     { label: "Notifications", value: "notifications", icon: "🔔" },
                     { label: "Menu", value: "menu", icon: "📋" },
+                    { label: "Map", value: "map", icon: "🗺️"},
                     { label: "Personal Account", value: "logout", icon: "👤" },
                 ].map((item) => (
                     <button
@@ -225,6 +227,8 @@ const RestaurantHome: React.FC = () => {
                 )}
 
                 {selectedSection === "menu" && <Menu />}
+
+                {selectedSection === "map" && userInfo && <Map restaurantId={userInfo.id} />}
 
                 {selectedSection === "logout" && (
                     <div className="flex flex-col items-center max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-md">

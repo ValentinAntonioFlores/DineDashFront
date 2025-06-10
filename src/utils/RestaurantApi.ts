@@ -222,3 +222,55 @@ export const deleteProductById = async (id: string): Promise<void> => {
 };
 
 
+export const updateRestaurantLocation = async (
+    idRestaurante: string,
+    locationData: { latitude: number; longitude: number }
+) => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.put(
+            `http://localhost:8000/restaurantUsers/${idRestaurante}/location`,
+            locationData,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log("Location updated:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating location:", error);
+        throw error;
+    }
+};
+
+export interface LocationDTO {
+    latitude: number;
+    longitude: number;
+}
+
+export const fetchRestaurantLocation = async (restaurantId: string): Promise<LocationDTO> => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.get<LocationDTO>(
+            `http://localhost:8000/restaurantUsers/${restaurantId}/getlocation`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching location:", error);
+        throw error;
+    }
+};
+

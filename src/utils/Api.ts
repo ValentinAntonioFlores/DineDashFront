@@ -407,6 +407,63 @@ export const getAverageRating = async (restaurantId: string): Promise<number> =>
     }
 };
 
+export const updateClientUserLocation = async (
+    id: string,
+    locationData: { latitude: number; longitude: number }
+) => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.put(
+            `http://localhost:8000/clientUsers/${id}/location`,
+            locationData,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log("Client user location updated:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating client user location:", error);
+        throw error;
+    }
+};
+
+
+export interface LocationDTO {
+    latitude: number;
+    longitude: number;
+}
+
+export const fetchClientUserLocation = async (
+    id: string
+): Promise<LocationDTO> => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.get<LocationDTO>(
+            `http://localhost:8000/clientUsers/${id}/getLocation`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching client user location:", error);
+        throw error;
+    }
+};
+
+
+
 
 
 

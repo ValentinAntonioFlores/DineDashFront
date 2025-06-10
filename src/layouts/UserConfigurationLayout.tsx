@@ -3,6 +3,9 @@ import {Bell, CalendarCheck, Pencil, Shield, User} from 'lucide-react';
 import { EditableField } from "../components/EditableField.tsx";
 import { useNavigate } from 'react-router-dom';
 import { fetchUserReservations } from "../utils/Api.ts";
+import UserMap from "../components/UserMap.tsx";
+import { IoLocationSharp } from "react-icons/io5";
+
 
 type Props = {
     formData: {
@@ -105,6 +108,7 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                         { label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
                         { label: 'Privacy', icon: <Shield className="w-4 h-4" /> },
                         { label: 'Reservations', icon: <CalendarCheck className="w-4 h-4" /> },
+                        { label: 'My Location', icon: <IoLocationSharp className="w-4 h-4" />}
                     ].map(({ label, icon }) => (
                         <button
                             key={label}
@@ -255,6 +259,9 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                     ))
                                 )}
                             </div>
+                        )}
+                        {selectedCard === 'My Location' && (
+                            <UserMap />
                         )}
                     </section>
                 </div>

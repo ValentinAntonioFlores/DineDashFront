@@ -6,6 +6,7 @@ import { fetchPublicRestaurants, fetchUserFavoritesForHome, fetchCategories } fr
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useAuth } from '../hooks/useAuth.tsx';
 import { ArrowRight } from "lucide-react";
+import UserLocationView from "../components/UserLocationView.tsx";
 
 
 const Home: React.FC = () => {
@@ -70,6 +71,7 @@ const Home: React.FC = () => {
             <p className="text-lg text-gray-600 max-w-xl mx-auto">
                 Busca entre cientos de opciones locales y reserva tu mesa en segundos.
             </p>
+
         </>
     );
 
@@ -82,7 +84,11 @@ const Home: React.FC = () => {
         }
     };
 
-
+    const sectionMap = (
+        <div>
+            <UserLocationView />
+        </div>
+    );
 
     const searchForm = (
         <form
@@ -284,6 +290,7 @@ const Home: React.FC = () => {
                 section1={section1}
                 section2={section2}
                 sectionFavorites={sectionFavorites}
+                sectionMap={sectionMap}
                 footer={footer}
             />
         </HomeLayout>
