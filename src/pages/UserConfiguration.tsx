@@ -4,7 +4,7 @@ import { UserConfigurationLayout } from "../layouts/UserConfigurationLayout.tsx"
 import { useState, useEffect } from "react";
 
 const UserConfiguration: React.FC = () => {
-    const { userData, updateUser, signOut } = useAuth();
+    const { userData, updateUser, signOut } = useAuth(); // Destructure signOut from useAuth
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -85,15 +85,11 @@ const UserConfiguration: React.FC = () => {
                 formData={formData}
                 onChange={handleChange}
                 onSave={handleSave}
-                userId={userData?.id || ''} // <- pass the id here
+                userId={userData?.id || ''}
+                // PASS THE SIGN OUT HANDLER HERE
+                onSignOut={handleSignOut}
             />
-            {/* Add Sign Out Button */}
-            <button
-                onClick={handleSignOut}
-                className="w-full text-white bg-blue-500 hover:bg-blue-600 p-2 rounded mt-4"
-            >
-                Sign Out
-            </button>
+            {/* The standalone Sign Out Button is removed from here */}
         </HomeLayout>
     );
 };

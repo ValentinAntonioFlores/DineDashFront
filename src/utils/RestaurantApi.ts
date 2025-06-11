@@ -310,3 +310,23 @@ export const fetchRestaurantReviewsForClient = (
             throw error; // Re-throw to allow component to catch and display
         });
 };
+
+
+export const fetchPendingReservationsCount = async (restaurantId: string): Promise<number> => {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await axios.get(
+            `http://localhost:8000/reservations/restaurant/${restaurantId}/pending-count`,
+            {
+                headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                },
+            }
+        );
+        // The backend returns a Long, which Axios will parse as a number
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching pending reservations count for restaurant ${restaurantId}:`, error);
+        throw error;
+    }
+};

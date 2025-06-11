@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {Bell, CalendarCheck, Pencil, Shield, User} from 'lucide-react';
+import { Bell, CalendarCheck, Pencil, Shield, User, MapPin } from 'lucide-react';
 import { EditableField } from "../components/EditableField.tsx";
 import { useNavigate } from 'react-router-dom';
 import { fetchUserReservations } from "../utils/Api.ts";
 import UserMap from "../components/UserMap.tsx";
-import { IoLocationSharp } from "react-icons/io5";
 
 
 type Props = {
@@ -19,9 +18,10 @@ type Props = {
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onSave: (updatedData: Props['formData']) => void;
     userId: string;
+    onSignOut: () => void;
 };
 
-export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, onSave, userId }) => {
+export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, onSave, userId, onSignOut }) => {
     const navigate = useNavigate();
     const [selectedCard, setSelectedCard] = useState<string>('Profile Settings');
     const [isEditingAll, setIsEditingAll] = useState(false);
@@ -49,25 +49,23 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
     }, [selectedCard, userId]);
 
     const formatDateTime = (isoString: string) => {
-        if (!isoString) return 'N/A'; // Handle cases where string might be empty or null
+        if (!isoString) return 'N/A';
         const date = new Date(isoString);
 
-        // Options for toLocaleDateString
         const dateOptions: Intl.DateTimeFormatOptions = {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
         };
 
-        // Options for toLocaleTimeString
         const timeOptions: Intl.DateTimeFormatOptions = {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: false, // Use 24-hour format
+            hour12: false,
         };
 
-        const formattedDate = date.toLocaleDateString('en-GB', dateOptions); // e.g., 10/06/2025
-        const formattedTime = date.toLocaleTimeString('en-GB', timeOptions); // e.g., 21:30
+        const formattedDate = date.toLocaleDateString('en-GB', dateOptions);
+        const formattedTime = date.toLocaleTimeString('en-GB', timeOptions);
 
         return `${formattedDate}, ${formattedTime}`;
     };
@@ -121,63 +119,71 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 text-gray-800">
+        <div className="flex w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800">
             {/* Sidebar */}
-            <aside className="w-64 bg-white border-r p-4 shadow-md rounded-r-xl flex flex-col">
-                <nav className="space-y-2">
+            {/* Removed ml-4 and my-4 to make it flush with the left and fully rounded */}
+            <aside className="w-64 bg-white border border-gray-200 p-6 shadow-xl flex flex-col transition-all duration-300 ease-in-out rounded-2xl">
+                <h3 className="text-xl font-bold mb-6 text-gray-900">Settings Menu</h3>
+                <nav className="space-y-3">
                     {[
-                        { label: 'Profile Settings', icon: <Pencil className="w-4 h-4" /> },
-                        { label: 'Account Info', icon: <User className="w-4 h-4" /> },
-                        { label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
-                        { label: 'Privacy', icon: <Shield className="w-4 h-4" /> },
-                        { label: 'Reservations', icon: <CalendarCheck className="w-4 h-4" /> },
-                        { label: 'My Location', icon: <IoLocationSharp className="w-4 h-4" />}
+                        { label: 'Profile Settings', icon: <User className="w-5 h-5" /> },
+                        { label: 'Account Info', icon: <Pencil className="w-5 h-5" /> },
+                        { label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
+                        { label: 'Privacy', icon: <Shield className="w-5 h-5" /> },
+                        { label: 'Reservations', icon: <CalendarCheck className="w-5 h-5" /> },
+                        { label: 'My Location', icon: <MapPin className="w-5 h-5" /> }
                     ].map(({ label, icon }) => (
                         <button
                             key={label}
                             onClick={() => setSelectedCard(label)}
-                            className={`flex items-center w-full gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                            className={`flex items-center w-full gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200
           ${selectedCard === label
-                                ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-blue-600'}`}
+                                ? 'bg-blue-600 text-white shadow-lg transform translate-x-1'
+                                : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600 hover:shadow-sm'}`}
                         >
                             {icon}
-                            {label}
+                            <span>{label}</span>
                         </button>
                     ))}
                 </nav>
 
-                <div className="mt-auto pt-6">
+                <div className="mt-auto pt-8 space-y-3">
                     <button
                         onClick={handleDeleteAccount}
-                        className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
+                        className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
                     >
                         Delete Account
+                    </button>
+                    <button
+                        onClick={onSignOut}
+                        className="w-full bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                        Sign Out
                     </button>
                 </div>
             </aside>
 
 
             {/* Main content */}
-            <main className="flex-1 p-8 overflow-y-auto">
-                <div className="bg-white rounded-xl shadow-md p-6 max-w-4xl mx-auto space-y-6">
-                    <header className="flex justify-between items-center">
-                        <h2 className="text-2xl font-semibold">{selectedCard}</h2>
+            <main className="flex-1 p-10 overflow-y-auto">
+                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl mx-auto space-y-8">
+                    <header className="flex justify-between items-center border-b border-gray-200 pb-4">
+                        <h2 className="text-3xl font-bold text-gray-900">{selectedCard}</h2>
                         {selectedCard === 'Profile Settings' && (
                             <button
                                 onClick={() => setIsEditingAll(!isEditingAll)}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="p-2 rounded-full text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 title="Toggle Edit Mode"
                             >
-                                <Pencil size={20} />
+                                <Pencil size={24} />
                             </button>
                         )}
                     </header>
 
-                    <section className="space-y-6">
+                    <section className="space-y-8">
                         {selectedCard === 'Profile Settings' && (
                             <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <EditableField
                                         label="First Name"
                                         name="firstName"
@@ -203,25 +209,26 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                 />
 
                                 {isEditingAll && (
-                                    <label className="flex items-center gap-2 text-sm">
+                                    <label className="flex items-center gap-2 text-base font-medium text-gray-700 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={changePassword}
                                             onChange={(e) => setChangePassword(e.target.checked)}
-                                            className="accent-blue-500"
+                                            className="accent-blue-600 w-5 h-5"
                                         />
                                         Change Password
                                     </label>
                                 )}
 
                                 {changePassword && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <EditableField
                                             label="Password"
                                             name="password"
                                             value={currentFormData.password}
                                             onChange={(e) => setCurrentFormData(prev => ({ ...prev, password: e.target.value }))}
                                             isEditing={isEditingAll}
+                                            type="password"
                                         />
                                         <EditableField
                                             label="Confirm Password"
@@ -229,16 +236,17 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                             value={currentFormData.confirmPassword}
                                             onChange={(e) => setCurrentFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                                             isEditing={isEditingAll}
+                                            type="password"
                                         />
                                     </div>
                                 )}
 
                                 <button
                                     onClick={handleSaveAll}
-                                    className={`w-full py-2 text-white font-semibold rounded-lg transition ${
+                                    className={`w-full py-3 px-6 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                                         isEditingAll
                                             ? 'bg-blue-600 hover:bg-blue-700'
-                                            : 'bg-gray-400 cursor-not-allowed'
+                                            : 'bg-gray-400 cursor-not-allowed opacity-70'
                                     }`}
                                     disabled={!isEditingAll}
                                 >
@@ -253,31 +261,29 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                 value={currentFormData.message}
                                 onChange={onChange}
                                 placeholder="Your message..."
-                                className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200"
-                                rows={5}
+                                className="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200 text-base"
+                                rows={6}
                             />
                         )}
 
-                        {selectedCard === 'Notifications' && <p className="text-gray-600">Manage your notification preferences here.</p>}
-                        {selectedCard === 'Privacy' && <p className="text-gray-600">Adjust your privacy settings.</p>}
+                        {selectedCard === 'Notifications' && <p className="text-lg text-gray-600">Manage your notification preferences here.</p>}
+                        {selectedCard === 'Privacy' && <p className="text-lg text-gray-600">Adjust your privacy settings.</p>}
 
                         {selectedCard === 'Reservations' && (
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                                 {reservations.length === 0 ? (
-                                    <p className="text-gray-500">You have no reservations yet.</p>
+                                    <p className="text-lg text-gray-500 italic">You have no reservations yet.</p>
                                 ) : (
                                     reservations.map((res, i) => (
-                                        <div key={i} className="bg-white border rounded-lg p-4 shadow-sm transition hover:shadow-md">
-                                            <p className="text-sm text-gray-500">Reservation #{i + 1}</p>
-                                            <p className="mt-1"><span className="font-semibold">Restaurant:</span> {res.restaurantName}</p>
-                                            {/* --- APPLY FORMATTING HERE --- */}
-                                            <p><span className="font-semibold">Start Time:</span> {formatDateTime(res.startTime)}</p>
-                                            <p><span className="font-semibold">End Time:</span> {formatDateTime(res.endTime)}</p>
-                                            {/* --- END APPLY FORMATTING --- */}
-                                            <p><span className="font-semibold">Status:</span> <span className={`px-2 py-1 text-xs rounded ${
+                                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-1 transform">
+                                            <p className="text-sm text-gray-500 mb-2">Reservation #{i + 1}</p>
+                                            <p className="mt-1 text-lg"><span className="font-semibold text-gray-800">Restaurant:</span> {res.restaurantName}</p>
+                                            <p className="text-md text-gray-700"><span className="font-semibold">Start Time:</span> {formatDateTime(res.startTime)}</p>
+                                            <p className="text-md text-gray-700"><span className="font-semibold">End Time:</span> {formatDateTime(res.endTime)}</p>
+                                            <p className="mt-2"><span className="font-semibold text-gray-800">Status:</span> <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                                                 res.reservationStatus === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
                                                     res.reservationStatus === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                        'bg-yellow-100 text-yellow-700'
+                                                        'bg-yellow-100 text-yellow-800'
                                             }`}>{res.reservationStatus}</span></p>
                                         </div>
                                     ))

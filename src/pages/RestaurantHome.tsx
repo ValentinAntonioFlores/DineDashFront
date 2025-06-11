@@ -5,11 +5,12 @@ import ReservationsOverview from "../components/ReservationsOverview.tsx";
 import Logout from "../components/Logout.tsx";
 import { fetchGridLayout, saveGridLayout } from "../utils/TableApi.ts";
 import { Table } from "../utils/TableApi";
-import {getRestaurant, saveRestaurant} from "../utils/RestaurantApi.ts";
+import {fetchPendingReservationsCount as fetchNotificationsCount,  getRestaurant, saveRestaurant } from "../utils/RestaurantApi.ts";
 import RestaurantReservations from "../components/RestaurantReservations.tsx";
 import { motion } from "framer-motion";
 import Menu from "../components/Menu.tsx";
 import Map from "../components/Map.tsx";
+import { Image, LayoutGrid, CalendarDays, Bell, Utensils, Map as MapIcon, LogOut, UserRound } from 'lucide-react'; // Import Lucide icons
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" | "menu" | "map" | "logout">("image");
@@ -23,6 +24,7 @@ const RestaurantHome: React.FC = () => {
     const [restaurantImage, setRestaurantImage] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<{ id: string; restaurantName: string; email: string } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [pendingReservationsCount, setPendingReservationsCount] = useState<number>(0); // State for the badge count
 
     const loadGrid = (gridData: any[][]): Table[][] => {
         const defaultGridSize = 10;
@@ -50,23 +52,27 @@ const RestaurantHome: React.FC = () => {
         );
     };
 
-    // On mount: load user and grid
+    // On mount: load user, grid, restaurant image, and pending reservations count
     useEffect(() => {
         const storedUserInfo = localStorage.getItem("userInfo");
         if (storedUserInfo) {
             const parsed = JSON.parse(storedUserInfo);
             setUserInfo(parsed);
 
-            const fetchData = async () => {
+            const fetchData = async (restaurantId: string) => {
                 try {
-                    const fetchedGrid = await fetchGridLayout(parsed.id);
+                    const fetchedGrid = await fetchGridLayout(restaurantId);
                     setGrid(loadGrid(fetchedGrid));
 
-                    // 🔥 Fetch restaurant info (including image)
-                    const restaurantDetails = await getRestaurant(parsed.id);
+                    const restaurantDetails = await getRestaurant(restaurantId);
                     if (restaurantDetails.imageBase64) {
                         setRestaurantImage(restaurantDetails.imageBase64);
                     }
+
+                    // Fetch pending reservations count for the badge
+                    const count = await fetchNotificationsCount(restaurantId); // Using the renamed import
+                    setPendingReservationsCount(count);
+
                 } catch (error) {
                     console.error("Error fetching data:", error);
                 } finally {
@@ -74,12 +80,33 @@ const RestaurantHome: React.FC = () => {
                 }
             };
 
-            fetchData();
+            fetchData(parsed.id);
         } else {
             console.error("User info not found in local storage.");
             setLoading(false);
         }
     }, []);
+
+    // Effect to periodically refresh the pending reservations count
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (userInfo?.id) {
+            const refreshCount = async () => {
+                try {
+                    const count = await fetchNotificationsCount(userInfo.id); // Using the renamed import
+                    setPendingReservationsCount(count);
+                } catch (error) {
+                    console.error("Error refreshing pending reservations count:", error);
+                }
+            };
+
+            interval = setInterval(refreshCount, 15000); // Refresh every 15 seconds
+        }
+
+        return () => {
+            if (interval) clearInterval(interval); // Clean up interval on unmount
+        };
+    }, [userInfo?.id]);
 
     const handleLogout = () => {
         localStorage.removeItem("authToken");
@@ -109,14 +136,14 @@ const RestaurantHome: React.FC = () => {
 
         try {
             console.log("Saving image for restaurant:", userInfo.restaurantName);
-            console.log("Image data:", restaurantImage); // Log the image data to confirm
+            console.log("Image data:", restaurantImage);
 
             const response = await saveRestaurant({
                 id: userInfo.id,
                 image: restaurantImage,
             });
 
-            console.log("Image save response:", response); // Log the response from the API
+            console.log("Image save response:", response);
             alert("Image saved successfully!");
         } catch (err) {
             console.error("Error saving image", err);
@@ -146,109 +173,134 @@ const RestaurantHome: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="flex min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4 font-inter" // Added overall padding and Inter font
         >
-        <div className="flex h-screen">
-            <div className="w-56 bg-gradient-to-b from-gray-900 to-gray-700 text-white flex flex-col items-center py-8 space-y-2 shadow-lg">
+            {/* Sidebar */}
+            {/* Removed ml-4 and my-4 from aside, and instead applied p-4 to the parent div */}
+            <aside className="w-64 bg-gray-900 text-white flex flex-col py-8 space-y-3 shadow-2xl rounded-2xl">
+                <h3 className="text-xl font-bold text-center mb-4 text-gray-100">Restaurant Dashboard</h3>
                 {[
-                    { label: "Image Upload", value: "image", icon: "📷" },
-                    { label: "Grid Layout", value: "layout", icon: "🪑" },
-                    { label: "Reservations", value: "reservations", icon: "📅" },
-                    { label: "Notifications", value: "notifications", icon: "🔔" },
-                    { label: "Menu", value: "menu", icon: "📋" },
-                    { label: "Map", value: "map", icon: "🗺️"},
-                    { label: "Personal Account", value: "logout", icon: "👤" },
+                    { label: "Image Upload", value: "image", icon: <Image className="w-5 h-5" /> },
+                    { label: "Grid Layout", value: "layout", icon: <LayoutGrid className="w-5 h-5" /> },
+                    { label: "Reservations", value: "reservations", icon: <CalendarDays className="w-5 h-5" /> },
+                    { label: "Notifications", value: "notifications", icon: <Bell className="w-5 h-5" /> },
+                    { label: "Menu", value: "menu", icon: <Utensils className="w-5 h-5" /> },
+                    { label: "Map", value: "map", icon: <MapIcon className="w-5 h-5" /> },
+                    { label: "Personal Account", value: "logout", icon: <UserRound className="w-5 h-5" /> },
                 ].map((item) => (
                     <button
                         key={item.value}
                         onClick={() => setSelectedSection(item.value as any)}
-                        className={`w-11/12 py-2 px-4 rounded-lg text-left transition-all duration-200
-                ${selectedSection === item.value ? "bg-white text-gray-900 font-semibold shadow-inner" : "hover:bg-gray-600"}
-            `}
-
+                        className={`w-11/12 mx-auto flex items-center gap-3 py-3 px-4 rounded-xl text-left font-medium transition-all duration-300 relative group
+                            ${selectedSection === item.value
+                            ? "bg-white text-gray-900 font-semibold shadow-xl ring-2 ring-blue-500" // Stronger active state, ring
+                            : "hover:bg-gray-700 hover:text-white" // Hover state
+                        }
+                        `}
                     >
-                        <span className="mr-2">{item.icon}</span>
-                        {item.label}
+                        <span className="flex-shrink-0">{item.icon}</span>
+                        <span className="flex-grow">{item.label}</span>
+                        {/* Conditional rendering of the pending count badge */}
+                        {item.value === "notifications" && pendingReservationsCount > 0 && (
+                            <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform">
+                                {pendingReservationsCount}
+                            </span>
+                        )}
                     </button>
                 ))}
-            </div>
+                {/* Logout button moved to the bottom of the sidebar logically */}
+
+            </aside>
 
 
             {/* Main Content */}
-            <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
-                {selectedSection === "image" && (
-                    <>
-                        <ImageUpload
-                            restaurantImage={restaurantImage}
-                            onImageChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = () => setRestaurantImage(reader.result as string);
-                                    reader.readAsDataURL(file);
-                                }
-                            }}
-                        />
-                        <button
-                            onClick={saveRestaurantImage}
-                            className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
-                        >
-                            Save Image
-                        </button>
-                    </>
-                )}
+            {/* Removed my-4 and mr-4, adjusted rounding to match sidebar */}
+            <div className="flex-1 p-10 bg-white shadow-xl rounded-2xl overflow-y-auto ml-4">
+                {/* Dynamically render section title based on selectedSection */}
+                <h2 className="text-4xl font-bold text-gray-800 mb-8 border-b-2 border-gray-200 pb-4">
+                    {selectedSection === "image" && "Restaurant Image Upload"}
+                    {selectedSection === "layout" && "Restaurant Floor Plan"}
+                    {selectedSection === "reservations" && "Manage Reservations"}
+                    {selectedSection === "notifications" && "Reservation Notifications"}
+                    {selectedSection === "menu" && "Manage Restaurant Menu"}
+                    {selectedSection === "map" && "Restaurant Location Map"}
+                    {selectedSection === "logout" && "Personal Account Settings"}
+                </h2>
 
-                {selectedSection === "layout" && (
-                    <>
-                        {loading ? (
-                            <div>Loading grid layout...</div>
-                        ) : (
-                            <>
-                                <GridLayout
-                                    grid={grid}
-                                    selectedSeats={selectedSeats}
-                                    mode={mode}
-                                    toggleCell={toggleCell}
-                                    setMode={setMode}
-                                    setSelectedSeats={setSelectedSeats}
-                                />
-                                <button
-                                    onClick={saveCurrentGridLayout}
-                                    className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-                                >
-                                    Save Grid Layout
-                                </button>
-                            </>
-                        )}
-                    </>
-                )}
+                <div className="space-y-8"> {/* Consistent spacing for content */}
+                    {selectedSection === "image" && (
+                        <>
+                            <ImageUpload
+                                restaurantImage={restaurantImage}
+                                onImageChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = () => setRestaurantImage(reader.result as string);
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                            <button
+                                onClick={saveRestaurantImage}
+                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all"
+                            >
+                                Save Image
+                            </button>
+                        </>
+                    )}
 
-                {selectedSection === "reservations" && (
-                    <ReservationsOverview grid={grid} toggleReservation={(row, col) => toggleCell(row, col)} />
-                )}
+                    {selectedSection === "layout" && (
+                        <>
+                            {loading ? (
+                                <div className="text-gray-600 italic">Loading grid layout...</div>
+                            ) : (
+                                <>
+                                    <GridLayout
+                                        grid={grid}
+                                        selectedSeats={selectedSeats}
+                                        mode={mode}
+                                        toggleCell={toggleCell}
+                                    />
+                                    <button
+                                        onClick={saveCurrentGridLayout}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all"
+                                    >
+                                        Save Grid Layout
+                                    </button>
+                                </>
+                            )}
+                        </>
+                    )}
 
-                {selectedSection === "menu" && <Menu />}
+                    {selectedSection === "reservations" && (
+                        <ReservationsOverview grid={grid} toggleReservation={(row, col) => toggleCell(row, col)} />
+                    )}
 
-                {selectedSection === "map" && userInfo && <Map restaurantId={userInfo.id} />}
+                    {selectedSection === "menu" && <Menu />}
 
-                {selectedSection === "logout" && (
-                    <div className="flex flex-col items-center max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-md">
-                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">Personal Account</h3>
-                        {userInfo && (
-                            <div className="text-center mb-6">
-                                <p className="text-gray-600 text-sm">Restaurant:</p>
-                                <p className="text-lg font-medium">{userInfo.restaurantName}</p>
-                                <p className="text-gray-600 mt-1 text-sm">{userInfo.email}</p>
-                            </div>
-                        )}
-                        <Logout onLogout={handleLogout} />
-                    </div>
-                )}
+                    {selectedSection === "map" && userInfo && <Map restaurantId={userInfo.id} />}
 
-                {selectedSection === "notifications" && (
-                    <RestaurantReservations />
-                )}
+                    {selectedSection === "logout" && (
+                        <div className="flex flex-col items-center max-w-lg mx-auto bg-gray-50 p-8 rounded-3xl shadow-xl border border-gray-200">
+                            <UserRound className="w-16 h-16 text-blue-600 mb-6" />
+                            <h3 className="text-3xl font-semibold text-gray-800 mb-4">Personal Account</h3>
+                            {userInfo && (
+                                <div className="text-center mb-6 text-gray-700">
+                                    <p className="text-sm font-medium">Restaurant:</p>
+                                    <p className="text-xl font-bold mb-1">{userInfo.restaurantName}</p>
+                                    <p className="text-md font-light">{userInfo.email}</p>
+                                </div>
+                            )}
+                            <Logout onLogout={handleLogout} />
+                        </div>
+                    )}
+
+                    {selectedSection === "notifications" && (
+                        <RestaurantReservations />
+                    )}
+                </div>
             </div>
-        </div>
         </motion.div>
     );
 };

@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useRef } from "react";
-import { fetchRestaurantReservations} from "../utils/RestaurantApi.ts";
-import {UserReviewComponent}  from "./UserInformation.tsx"; // adjust path as needed
+import React, { useState, useEffect, useRef } from "react";
+import { fetchRestaurantReservations } from "../utils/RestaurantApi.ts";
+import { format } from "date-fns"; // Make sure date-fns is imported for formatting dates
+import { UserReviewComponent } from "./UserInformation.tsx"; // adjust path as needed
 import ClientReviewSummary from "./ClientReviewSummary.tsx";
 
 type Reservation = {
     reservationId: string;
-    userId: string; // Add this!
+    userId: string;
     clientUserName: string;
     tableId: string;
     status: string;
@@ -23,6 +24,9 @@ const generateTimeBlocks = () => [
     { label: "1:00 AM - 2:30 AM", start: "01:00", end: "02:30" },
 ];
 
+// --- NEW CONSTANT: Items per page ---
+const RESERVATIONS_PER_PAGE = 10; // You can adjust this number
+// --- END NEW CONSTANT ---
 
 const RestaurantReservations = () => {
     const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -37,10 +41,11 @@ const RestaurantReservations = () => {
     const [userDropdownOpenId, setUserDropdownOpenId] = useState<string | null>(null);
     const userDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-
-
-
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // --- NEW STATE FOR PAGINATION ---
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    // --- END NEW STATE ---
 
     const fetchReservations = async () => {
         if (!restaurantId) {
@@ -50,15 +55,15 @@ const RestaurantReservations = () => {
         try {
             const data = await fetchRestaurantReservations(restaurantId);
             setReservations(data);
+            setCurrentPage(1); // Reset to first page whenever new reservations are fetched
         } catch (error) {
             console.error("Failed to fetch reservations", error);
         }
     };
 
-
     useEffect(() => {
         fetchReservations();
-    }, []);
+    }, [restaurantId]); // Depend on restaurantId to refetch if it changes
 
     const updateStatus = async (
         reservationId: string,
@@ -70,7 +75,7 @@ const RestaurantReservations = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ reservationId, status }),
             });
-            fetchReservations();
+            fetchReservations(); // Re-fetch to update status and potentially pending count
         } catch (error) {
             console.error("Failed to update status", error);
         }
@@ -88,7 +93,6 @@ const RestaurantReservations = () => {
         };
     }, []);
 
-
     const isInTimeBlock = (reservationStart: Date, reservationEnd: Date, blockStart: string, blockEnd: string) => {
         const resStart = reservationStart.getHours() * 60 + reservationStart.getMinutes();
         const resEnd = reservationEnd.getHours() * 60 + reservationEnd.getMinutes();
@@ -102,7 +106,6 @@ const RestaurantReservations = () => {
         // Only show reservations that are fully within the block
         return resStart >= blockStartMinutes && resEnd <= blockEndMinutes;
     };
-
 
     // Close dropdown if clicked outside
     useEffect(() => {
@@ -121,7 +124,6 @@ const RestaurantReservations = () => {
         };
     }, [userDropdownOpenId]);
 
-
     const filteredReservations = reservations.filter((r) => {
         const matchesStatus = filter === "ALL" || r.status === filter;
 
@@ -129,7 +131,6 @@ const RestaurantReservations = () => {
         const dateString = reservationDate.getFullYear().toString().padStart(4, '0') + '-' +
             (reservationDate.getMonth() + 1).toString().padStart(2, '0') + '-' +
             reservationDate.getDate().toString().padStart(2, '0');
-
 
         const matchesDate = !filterDate || filterDate === dateString;
         let matchesTimeBlock = true;
@@ -139,9 +140,21 @@ const RestaurantReservations = () => {
             matchesTimeBlock = isInTimeBlock(reservationStart, reservationEnd, filterStartTime, filterEndTime);
         }
 
-
         return matchesStatus && matchesDate && matchesTimeBlock;
     });
+
+    // --- PAGINATION LOGIC ---
+    const indexOfLastReservation = currentPage * RESERVATIONS_PER_PAGE;
+    const indexOfFirstReservation = indexOfLastReservation - RESERVATIONS_PER_PAGE;
+    const currentReservations = filteredReservations.slice(indexOfFirstReservation, indexOfLastReservation);
+
+    const totalPages = Math.ceil(filteredReservations.length / RESERVATIONS_PER_PAGE);
+
+    const paginate = (pageNumber: number) => {
+        setCurrentPage(pageNumber);
+        setUserDropdownOpenId(null); // Close any open user review dropdown when changing pages
+    };
+    // --- END PAGINATION LOGIC ---
 
     const formatDateTime = (isoString: string) =>
         new Date(isoString).toLocaleString("en-GB", {
@@ -153,12 +166,9 @@ const RestaurantReservations = () => {
             hour12: false,
         });
 
-
-
     return (
         <div className="p-6 max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Reservations</h2>
-
 
             <div className="flex gap-4 mb-6">
                 <div>
@@ -166,7 +176,10 @@ const RestaurantReservations = () => {
                     <input
                         type="date"
                         value={filterDate}
-                        onChange={(e) => setFilterDate(e.target.value)}
+                        onChange={(e) => {
+                            setFilterDate(e.target.value);
+                            setCurrentPage(1); // Reset page on filter change
+                        }}
                         className="border border-gray-300 rounded px-2 py-1"
                     />
                 </div>
@@ -179,10 +192,10 @@ const RestaurantReservations = () => {
                                 setFilterStartTime(block.start);
                                 setFilterEndTime(block.end);
                             } else {
-                                // If no block is selected (i.e. "All Time Blocks"), clear the time filters
                                 setFilterStartTime("");
                                 setFilterEndTime("");
                             }
+                            setCurrentPage(1); // Reset page on filter change
                         }}
                         className="border border-gray-300 rounded px-2 py-1"
                         value={
@@ -198,9 +211,9 @@ const RestaurantReservations = () => {
                             </option>
                         ))}
                     </select>
-
                 </div>
             </div>
+
             {/* Filter Dropdown */}
             <div className="relative w-48 mb-6" ref={dropdownRef}>
                 <button
@@ -228,6 +241,7 @@ const RestaurantReservations = () => {
                                 onClick={() => {
                                     setFilter(status);
                                     setDropdownOpen(false);
+                                    setCurrentPage(1); // Reset page on filter change
                                 }}
                                 className={`px-4 py-2 cursor-pointer hover:bg-blue-600 hover:text-white ${
                                     filter === status ? "bg-blue-100 font-medium" : ""
@@ -241,14 +255,18 @@ const RestaurantReservations = () => {
             </div>
 
             {/* Reservation List */}
-
-            {filteredReservations.length === 0 ? (
+            {currentReservations.length === 0 && filteredReservations.length > 0 && (
+                <p className="text-gray-500 italic">No reservations found for the current page with applied filters.</p>
+            )}
+            {filteredReservations.length === 0 && (
                 <p className="text-gray-500 italic">
                     No reservations {filter !== "ALL" ? `with status ${filter}` : ""}.
                 </p>
-            ) : (
+            )}
+
+            {currentReservations.length > 0 && (
                 <div className="space-y-4">
-                    {filteredReservations.map((res) => (
+                    {currentReservations.map((res) => ( // Use currentReservations here
                         <div
                             key={res.reservationId}
                             className="flex justify-between items-center bg-white border border-gray-200 p-5 rounded-xl shadow-sm hover:shadow-md transition"
@@ -267,7 +285,7 @@ const RestaurantReservations = () => {
                                 >
                                     {/* User icon */}
                                     <svg
-                                        xmlns="http://www.w3.org/2000/svg"
+                                        xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
                                         className="w-5 h-5 text-gray-500 mr-2"
                                         fill="currentColor"
                                         viewBox="0 0 24 24"
@@ -276,15 +294,11 @@ const RestaurantReservations = () => {
                                         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
                                         <path d="M6 20v-2c0-2.21 3.58-4 6-4s6 1.79 6 4v2" />
                                     </svg>
-
                                     <span className="font-semibold text-gray-800 mr-1">User:</span>
                                     {res.clientUserName}
-                                    {/* NEW: Display the review summary here */}
-
                                 </p>
 
                                 {/* User review dropdown */}
-
                                 {userDropdownOpenId === res.reservationId && (
                                     <>
                                         {console.log("Opening review for userId:", res.userId, "restaurantId:", restaurantId)}
@@ -324,8 +338,8 @@ const RestaurantReservations = () => {
                                                     : "bg-yellow-100 text-yellow-800"
                                         }`}
                                     >
-          {res.status}
-        </span>
+                                        {res.status}
+                                    </span>
                                 </p>
                             </div>
                             <div className="flex space-x-3">
@@ -346,9 +360,43 @@ const RestaurantReservations = () => {
                             </div>
                         </div>
                     ))}
-
                 </div>
             )}
+
+            {/* --- NEW: Pagination Controls --- */}
+            {totalPages > 1 && (
+                <div className="flex justify-center mt-8 space-x-2">
+                    <button
+                        onClick={() => paginate(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg transition-all duration-200
+                                    ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                    >
+                        Previous
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                        <button
+                            key={pageNumber}
+                            onClick={() => paginate(pageNumber)}
+                            className={`px-4 py-2 rounded-lg transition-all duration-200
+                                        ${currentPage === pageNumber ? 'bg-blue-700 text-white font-bold' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'}`}
+                        >
+                            {pageNumber}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => paginate(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg transition-all duration-200
+                                    ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
+            {/* --- END NEW: Pagination Controls --- */}
         </div>
     );
 };

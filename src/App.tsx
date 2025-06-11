@@ -19,6 +19,10 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
+                <Route
+                    path="/"
+                    element={isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/signup" />}
+                />
                 {/* Public Routes */}
                 <Route path="/" element={<Navigate to="/signup" />} />
                 <Route path="/signup" element={<SignUpLayout />} />
