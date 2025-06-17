@@ -10,10 +10,11 @@ import RestaurantReservations from "../components/RestaurantReservations.tsx";
 import { motion } from "framer-motion";
 import Menu from "../components/Menu.tsx";
 import Map from "../components/Map.tsx";
-import { Image, LayoutGrid, CalendarDays, Bell, Utensils, Map as MapIcon, LogOut, UserRound } from 'lucide-react'; // Import Lucide icons
+import { Image, LayoutGrid, CalendarDays, Bell, Utensils, Map as MapIcon, LogOut, UserRound } from 'lucide-react';
+import RestaurantEmailNotificationToggle from "../components/RestaurantEmail.tsx"; // Import Lucide icons
 
 const RestaurantHome: React.FC = () => {
-    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" | "menu" | "map" | "logout">("image");
+    const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" |"Email" | "menu" | "map" | "logout">("image");
     const [grid, setGrid] = useState<Table[][]>(
         Array.from({ length: 10 }, () =>
             Array.from({ length: 10 }, () => ({ isTable: false, seats: 0, reserved: false }))
@@ -184,6 +185,7 @@ const RestaurantHome: React.FC = () => {
                     { label: "Grid Layout", value: "layout", icon: <LayoutGrid className="w-5 h-5" /> },
                     { label: "Reservations", value: "reservations", icon: <CalendarDays className="w-5 h-5" /> },
                     { label: "Notifications", value: "notifications", icon: <Bell className="w-5 h-5" /> },
+                    { label: "Email", value: "Email", icon: <Bell className="w-5 h-5" /> },
                     { label: "Menu", value: "menu", icon: <Utensils className="w-5 h-5" /> },
                     { label: "Map", value: "map", icon: <MapIcon className="w-5 h-5" /> },
                     { label: "Personal Account", value: "logout", icon: <UserRound className="w-5 h-5" /> },
@@ -222,6 +224,7 @@ const RestaurantHome: React.FC = () => {
                     {selectedSection === "layout" && "Restaurant Floor Plan"}
                     {selectedSection === "reservations" && "Manage Reservations"}
                     {selectedSection === "notifications" && "Reservation Notifications"}
+                    {selectedSection === "Email" && "Update you're email."}
                     {selectedSection === "menu" && "Manage Restaurant Menu"}
                     {selectedSection === "map" && "Restaurant Location Map"}
                     {selectedSection === "logout" && "Personal Account Settings"}
@@ -298,6 +301,9 @@ const RestaurantHome: React.FC = () => {
 
                     {selectedSection === "notifications" && (
                         <RestaurantReservations />
+                    )}
+                    {selectedSection === "Email" && userInfo && (
+                        <RestaurantEmailNotificationToggle restaurantId={userInfo.id} />
                     )}
                 </div>
             </div>

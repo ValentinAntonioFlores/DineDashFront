@@ -4,6 +4,7 @@ import { EditableField } from "../components/EditableField.tsx";
 import { useNavigate } from 'react-router-dom';
 import { fetchUserReservations } from "../utils/Api.ts";
 import UserMap from "../components/UserMap.tsx";
+import EmailNotificationToggle from "../components/UserEmail.tsx";
 
 
 type Props = {
@@ -128,6 +129,7 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                     {[
                         { label: 'Profile Settings', icon: <User className="w-5 h-5" /> },
                         { label: 'Account Info', icon: <Pencil className="w-5 h-5" /> },
+                        { label: 'Email', icon: <Pencil className="w-5 h-5" /> },
                         { label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
                         { label: 'Privacy', icon: <Shield className="w-5 h-5" /> },
                         { label: 'Reservations', icon: <CalendarCheck className="w-5 h-5" /> },
@@ -265,6 +267,11 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                                 rows={6}
                             />
                         )}
+                        {selectedCard === 'Email' && (
+                            <EmailNotificationToggle userId={userId} />
+                        )}
+
+
 
                         {selectedCard === 'Notifications' && <p className="text-lg text-gray-600">Manage your notification preferences here.</p>}
                         {selectedCard === 'Privacy' && <p className="text-lg text-gray-600">Adjust your privacy settings.</p>}

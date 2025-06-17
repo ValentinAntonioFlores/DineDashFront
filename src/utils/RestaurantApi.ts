@@ -150,17 +150,17 @@ export interface Product {
 }
 
 export const AddProductByRestaurant = async (
-        product: {
-            name: string;
-            description: string;
-            price: number;
-            image: string;
-            category: string;
-            restaurantUser: {
-                idRestaurante: string;
-            };
-        }
-    ): Promise<Product> => {
+    product: {
+        name: string;
+        description: string;
+        price: number;
+        image: string;
+        category: string;
+        restaurantUser: {
+            idRestaurante: string;
+        };
+    }
+): Promise<Product> => {
     const response = await fetch('http://localhost:8000/products', {
         method: 'POST',
         headers: {
@@ -186,6 +186,7 @@ export type Plate = {
     category: string;
     imageUrl: string;
 };
+
 
 
 // in RestaurantApi.ts
@@ -216,6 +217,9 @@ export const updateProductById = async (
     });
     return response.data;
 };
+
+
+
 
 export const deleteProductById = async (id: string): Promise<void> => {
     await axios.delete(`http://localhost:8000/products/${id}`);
@@ -327,6 +331,53 @@ export const fetchPendingReservationsCount = async (restaurantId: string): Promi
         return response.data;
     } catch (error) {
         console.error(`Error fetching pending reservations count for restaurant ${restaurantId}:`, error);
+        throw error;
+    }
+};
+
+export const fetchEmailNotificationsPreference = async (restaurantId: string): Promise<boolean> => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.get(`${BASE_URL}/restaurantUsers/${restaurantId}/notifications`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        return response.data; // should be true or false
+    } catch (error) {
+        console.error("Error fetching email notification preference:", error);
+        throw error;
+    }
+};
+
+
+export const updateEmailNotificationsPreference = async (
+    restaurantId: string,
+    enabled: boolean
+): Promise<string> => {
+    try {
+        const token = localStorage.getItem("authToken") || "";
+
+        const response = await axios.put(
+            `${BASE_URL}/restaurantUsers/${restaurantId}/notifications`,
+            null, // No body; data is in query param
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                params: {
+                    enabled: enabled,
+                },
+            }
+        );
+
+        return response.data; // Should return "Email notifications updated to: true/false"
+    } catch (error) {
+        console.error("Error updating email notification preference:", error);
         throw error;
     }
 };

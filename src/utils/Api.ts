@@ -493,6 +493,56 @@ export const markNotificationsSeenByIds = async (reservationIds: string[]): Prom
     }
 };
 
+export const getEmailNotifications = async (userId: string): Promise<boolean> => {
+    try {
+        const token = localStorage.getItem('authToken') || '';
+
+        const response = await fetch(`http://localhost:8000/clientUsers/${userId}/email-notifications`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch email notification status');
+        }
+
+        const result = await response.json(); // Should be a boolean
+        return result;
+    } catch (error) {
+        console.error('Error getting email notification setting:', error);
+        throw error;
+    }
+};
+
+export const updateEmailNotifications = async (userId: string, enabled: boolean): Promise<void> => {
+    try {
+        const token = localStorage.getItem('authToken') || '';
+
+        const response = await fetch(
+            `http://localhost:8000/clientUsers/${userId}/email-notifications?enabled=${enabled}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to update email notification setting');
+        }
+
+        // No body expected — success is enough
+    } catch (error) {
+        console.error('Error updating email notification setting:', error);
+        throw error;
+    }
+};
+
 
 
 
