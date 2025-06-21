@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import NotificationBell from '../components/NotificationsBell';
 import { updateClientUserLocation } from '../utils/Api'; // Ensure this path is correct
 import { MapPinIcon } from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
 
 type Props = {
@@ -47,7 +48,7 @@ export default function HomeLayout({ children }: Props) {
     // --- NEW: Function to handle saving current location ---
     const handleSaveCurrentLocation = async () => {
         if (!userId) {
-            alert("Please log in to save your location.");
+            toast.error("Please log in to save your location.");
             return;
         }
 
@@ -57,10 +58,10 @@ export default function HomeLayout({ children }: Props) {
                     const { latitude, longitude } = position.coords;
                     try {
                         await updateClientUserLocation(userId, { latitude, longitude });
-                        alert("Your current location has been saved!");
+                        toast.error("Your current location has been saved!");
                     } catch (error) {
                         console.error("Error saving location:", error);
-                        alert("Failed to save location. Please try again.");
+                        toast.error("Failed to save location. Please try again.");
                     }
                 },
                 (error) => {
@@ -79,7 +80,7 @@ export default function HomeLayout({ children }: Props) {
                         default:
                             break;
                     }
-                    alert(errorMessage);
+                    toast.error(errorMessage);
                 },
                 {
                     enableHighAccuracy: true,
@@ -88,7 +89,7 @@ export default function HomeLayout({ children }: Props) {
                 }
             );
         } else {
-            alert("Geolocation is not supported by your browser.");
+            toast.error("Geolocation is not supported by your browser.");
         }
     };
     // --- END NEW FUNCTION ---

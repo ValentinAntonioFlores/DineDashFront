@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
+import { toast } from "react-toastify";
 import {
     CreateRestaurantCategory,
     AddProductByRestaurant,
@@ -6,6 +7,7 @@ import {
     updateProductById,
     deleteProductById
 } from "../utils/RestaurantApi.ts";
+
 
 type Plate = {
     id: string;
@@ -52,14 +54,14 @@ const Menu: React.FC = () => {
     };
 
     const addPlate = async () => {
-        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice))) {
-            alert("Please enter a valid name and price.");
+        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice)) || Number(newPrice) < 0) {
+            toast.error("Please enter a valid name and a positive price.");
             return;
         }
 
         const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
         if (!restaurantId) {
-            alert("Restaurant ID not found.");
+            toast.error("Restaurant ID not found.");
             return;
         }
 
@@ -95,7 +97,7 @@ const Menu: React.FC = () => {
             resetForm();
         } catch (error) {
             console.error("Error adding plate:", error);
-            alert("Something went wrong while adding the plate.");
+            toast.error("Something went wrong while adding the plate.");
         }
     };
 
@@ -112,14 +114,14 @@ const Menu: React.FC = () => {
     const saveEditPlate = async () => {
         if (!editId) return;
 
-        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice))) {
-            alert("Please enter a valid name and price.");
+        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice)) || Number(newPrice) < 0) {
+            toast.error("Please enter a valid name and a positive price.");
             return;
         }
 
         const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
         if (!restaurantId) {
-            alert("Restaurant ID not found.");
+            toast.error("Restaurant ID not found.");
             return;
         }
 
@@ -158,7 +160,7 @@ const Menu: React.FC = () => {
             resetForm();
         } catch (error) {
             console.error("Error updating plate:", error);
-            alert("Something went wrong while updating the plate.");
+            toast.error("Something went wrong while updating the plate.");
         }
     };
 
@@ -168,9 +170,10 @@ const Menu: React.FC = () => {
         try {
             await deleteProductById(id);
             setPlates((prev) => prev.filter((plate) => plate.id !== id));
+            toast.success("Plate deleted successfully.");
         } catch (error) {
             console.error("Error deleting plate:", error);
-            alert("Failed to delete plate.");
+            toast.error("Failed to delete plate.");
         }
     };
 
@@ -178,7 +181,7 @@ const Menu: React.FC = () => {
         const fetchProducts = async () => {
             const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
             if (!restaurantId) {
-                alert("Restaurant ID not found.");
+                toast.error("Restaurant ID not found.");
                 return;
             }
 
@@ -302,6 +305,7 @@ const Menu: React.FC = () => {
                     <input
                         type="number"
                         step="0.01"
+                        min="0"
                         placeholder="Price"
                         value={newPrice}
                         onChange={(e) => setNewPrice(e.target.value)}

@@ -12,6 +12,7 @@ import Menu from "../components/Menu.tsx";
 import Map from "../components/Map.tsx";
 import { Image, LayoutGrid, CalendarDays, Bell, Utensils, Map as MapIcon, LogOut, UserRound } from 'lucide-react';
 import RestaurantEmailNotificationToggle from "../components/RestaurantEmail.tsx"; // Import Lucide icons
+import { toast } from 'react-toastify';
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" |"Email" | "menu" | "map" | "logout">("image");
@@ -117,15 +118,15 @@ const RestaurantHome: React.FC = () => {
 
     const saveCurrentGridLayout = async () => {
         if (!userInfo) {
-            alert("Error: User not logged in. Cannot save layout.");
+            toast.error("Error: User not logged in. Cannot save layout.");
             return;
         }
         try {
             await saveGridLayout(userInfo.id, grid);
-            alert("Grid layout saved successfully!");
+            toast.error("Grid layout saved successfully!");
         } catch (error) {
             console.error("Error saving grid layout:", error);
-            alert("Failed to save grid layout.");
+            toast.error("Failed to save grid layout.");
         }
     };
 
@@ -145,10 +146,10 @@ const RestaurantHome: React.FC = () => {
             });
 
             console.log("Image save response:", response);
-            alert("Image saved successfully!");
+            toast.error("Image saved successfully!");
         } catch (err) {
             console.error("Error saving image", err);
-            alert("Failed to save image");
+            toast.error("Failed to save image");
         }
     };
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signUpRestaurant } from "../utils/Api.ts";
 import AuthInput from '../components/AuthInput.tsx';
 import RestaurantSignUpLayout from '../layouts/RestaurantSignUpLayout';
+import { toast } from 'react-toastify';
 
 interface SignUpFormState {
     restaurantName: string;
@@ -54,7 +55,7 @@ const SignUpRestaurantForm: React.FC = () => {
             }
         } catch (error) {
             console.error('Error during signup:', error);
-            alert(error.message);  // Show an alert with the error message
+            toast.error(error.message);  // Show an alert with the error message
         }
     };
 

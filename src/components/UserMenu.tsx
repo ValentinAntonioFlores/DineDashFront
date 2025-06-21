@@ -35,7 +35,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ restaurantId }) => {
                     description: p.description,
                     price: p.price,
                     category: p.category,
-                    imageUrl: p.image || p.imageUrl || "",
+                    imageUrl: p.image, // Use p.image for the image URL
                 }));
                 setPlates(transformed);
             } catch (error) {

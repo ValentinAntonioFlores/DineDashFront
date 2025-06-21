@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SignInLayout from "../layouts/SignInLayout.tsx";
 import AuthInput from "../components/AuthInput.tsx";
 import { signIn } from "../utils/Api.ts";
+import { toast } from 'react-toastify';
 
 interface SignInFormState {
     email: string;
@@ -42,7 +43,7 @@ const SignInForm: React.FC = () => {
         e.preventDefault();
 
         if (!formData.email || !formData.password) {
-            alert("Please fill in both fields.");
+            toast.error("Please fill in both fields.");
             return;
         }
 

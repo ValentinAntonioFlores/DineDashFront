@@ -171,7 +171,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                     {notifications.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No notifications</div>
                     ) : (
-                        <ul className="max-h-60 overflow-y-auto">
+                        <ul className="max-h-60 overflow-y-auto flex flex-col-reverse">
                             {notifications.map((notif) => (
                                 <li
                                     key={notif.reservationId}

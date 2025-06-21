@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchUserReservations } from "../utils/Api.ts";
 import UserMap from "../components/UserMap.tsx";
 import EmailNotificationToggle from "../components/UserEmail.tsx";
-
+import { toast } from 'react-toastify';
 
 type Props = {
     formData: {
@@ -83,11 +83,11 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
             });
 
             localStorage.removeItem('authToken');
-            alert("Account deleted successfully!");
+            toast.error("Account deleted successfully!");
             navigate('/signup');
         } catch (error) {
             console.error('Error deleting account:', error);
-            alert('Failed to delete account. Please try again.');
+            toast.error('Failed to delete account. Please try again.');
         }
     };
 
@@ -99,12 +99,12 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
             const confirmPassword = currentFormData.confirmPassword.trim();
 
             if (password !== confirmPassword) {
-                alert("Passwords do not match.");
+                toast.error("Passwords do not match.");
                 return;
             }
 
             if (password.length < 6) {
-                alert("Password must be at least 6 characters long.");
+                toast.error("Password must be at least 6 characters long.");
                 return;
             }
         }
@@ -115,7 +115,7 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
             setChangePassword(false);
         } catch (error) {
             console.error("Error updating user:", error);
-            alert("There was an error updating your information. Please try again later.");
+            toast.error("There was an error updating your information. Please try again later.");
         }
     };
 
