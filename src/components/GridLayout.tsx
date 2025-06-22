@@ -118,10 +118,20 @@ const GridLayout: React.FC<GridLayoutProps> = ({
                                             <div
                                                 key={`${rowIndex}-${colIndex}`}
                                                 onClick={() => {
-                                                    if (!readOnly && !cell.reserved) toggleCell(rowIndex, colIndex);
+                                                    if (readOnly) return; // Prevent action in read-only mode
+
+                                                    // In "table" mode, you can only click on an empty cell to add a table.
+                                                    if (mode === "table" && !cell.isTable) {
+                                                        toggleCell(rowIndex, colIndex);
+                                                    }
+                                                    // In "erase" mode, you can only click on an existing table to remove it.
+                                                    else if (mode === "erase" && cell.isTable) {
+                                                        toggleCell(rowIndex, colIndex);
+                                                    }
                                                 }}
                                                 className={`
-                                                    w-16 h-16 flex items-center justify-center rounded-xl border-2 transition-all duration-300 transform hover:scale-105 cursor-pointer
+                                                    w-16 h-16 flex items-center justify-center rounded-xl border-2 transition-all duration-300 transform hover:scale-105
+                                                    ${!readOnly ? 'cursor-pointer' : ''}
                                                     ${cell.isTable
                                                         ? cell.reserved
                                                             ? "bg-gradient-to-br from-red-400 to-red-600 text-white border-red-500 shadow-lg shadow-red-200 cursor-not-allowed"
