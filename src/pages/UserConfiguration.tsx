@@ -2,6 +2,8 @@ import { useAuth } from "../hooks/useAuth";
 import HomeLayout from "../layouts/HomeHeaderLayout.tsx";
 import { UserConfigurationLayout } from "../layouts/UserConfigurationLayout.tsx";
 import { useState, useEffect } from "react";
+import { Toaster, toast } from 'sonner';
+
 
 const UserConfiguration: React.FC = () => {
     const { userData, updateUser, signOut } = useAuth(); // Destructure signOut from useAuth
@@ -37,11 +39,11 @@ const UserConfiguration: React.FC = () => {
 
         if (updatedData.password || updatedData.confirmPassword) {
             if (updatedData.password !== updatedData.confirmPassword) {
-                alert("Passwords do not match.");
+                toast.error("Passwords do not match.");
                 return;
             }
             if (updatedData.password.length < 6) {
-                alert("Password must be at least 6 characters long.");
+                toast.error("Password must be at least 6 characters long.");
                 return;
             }
             passwordToSend = updatedData.password;
@@ -57,25 +59,25 @@ const UserConfiguration: React.FC = () => {
         try {
             const result = await updateUser(dataToSend);
             if (result.success) {
-                alert("User updated successfully!");
+                toast.success("User updated successfully!");
                 setFormData(prev => ({
                     ...prev,
                     password: '',
                     confirmPassword: '',
                 }));
             } else {
-                alert("Failed to update user.");
+                toast.error("Failed to update user.");
             }
         } catch (error) {
             console.error("Error updating user:", error);
-            alert("Failed to update user.");
+            toast.error("Failed to update user.");
         }
     };
 
     const handleSignOut = () => {
         signOut();
         localStorage.removeItem("userInfo");
-        alert("You have logged out successfully.");
+        toast.success("You have logged out successfully.");
         // Optionally, redirect the user to a public page like the login page
     };
 

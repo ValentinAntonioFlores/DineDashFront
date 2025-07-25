@@ -9,6 +9,9 @@ import { FaStar, FaRegStar} from 'react-icons/fa';
 import { ReservationReviewPopup } from '../components/ReservationReviewPopup'; // adjust the path if needed
 import { ReviewButton} from "../components/ReviewButton.tsx";
 import UserMenu from "../components/UserMenu.tsx";
+import { Toaster, toast } from 'sonner';
+import ClientViewGrid from "../components/ClientViewGrid.tsx"; // Import the client view grid component
+
 
 
 // DTO interfaces
@@ -171,7 +174,7 @@ const RestaurantCardLayout: React.FC = () => {
 
         const userInfoString = localStorage.getItem('userInfo');
         if (!userInfoString) {
-            alert("You must be logged in to make a reservation.");
+            toast.error("You must be logged in to make a reservation.");
             return;
         }
 
@@ -183,7 +186,7 @@ const RestaurantCardLayout: React.FC = () => {
         );
 
         if (!table) {
-            alert("Table not found.");
+            toast.error("Table not found.");
             return;
         }
 
@@ -200,9 +203,9 @@ const RestaurantCardLayout: React.FC = () => {
                 status: "PENDING",
             });
 
-            alert(`Reservation for Table ${getTableNumber(selectedTable)} confirmed on ${reservation.date} at ${reservation.time}.`);
+            toast.success(`Reservation for Table ${getTableNumber(selectedTable)} confirmed on ${reservation.date} at ${reservation.time}.`);
         } catch (e) {
-            alert("Failed to reserve table. Please try again.");
+            toast.error("Failed to reserve table. Please try again.");
         }
     };
 
@@ -277,7 +280,7 @@ const RestaurantCardLayout: React.FC = () => {
                                 onClick={async () => {
                                     const userInfoString = localStorage.getItem('userInfo');
                                     if (!userInfoString || !restaurant) {
-                                        alert("You must be logged in to modify favorites.");
+                                        toast.error("You must be logged in to modify favorites.");
                                         return;
                                     }
                                     const { id: userId } = JSON.parse(userInfoString);
@@ -286,7 +289,7 @@ const RestaurantCardLayout: React.FC = () => {
                                         setIsFavorited(false);
                                     } catch (e) {
                                         console.error("Failed to unfavorite:", e);
-                                        alert("Something went wrong. Try again.");
+                                        toast.error("Something went wrong. Try again.");
                                     }
                                 }}
                                 className="text-yellow-400 cursor-pointer hover:text-yellow-500 transition-colors duration-300"
@@ -297,7 +300,7 @@ const RestaurantCardLayout: React.FC = () => {
                                 onClick={async () => {
                                     const userInfoString = localStorage.getItem('userInfo');
                                     if (!userInfoString || !restaurant) {
-                                        alert("You must be logged in to modify favorites.");
+                                        toast.error("You must be logged in to modify favorites.");
                                         return;
                                     }
                                     const { id: userId } = JSON.parse(userInfoString);
@@ -306,7 +309,7 @@ const RestaurantCardLayout: React.FC = () => {
                                         setIsFavorited(true);
                                     } catch (e) {
                                         console.error("Failed to favorite:", e);
-                                        alert("Something went wrong. Try again.");
+                                        toast.error("Something went wrong. Try again.");
                                     }
                                 }}
                                 className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors duration-300"
@@ -444,9 +447,12 @@ const RestaurantCardLayout: React.FC = () => {
                         <h2 className="text-xl font-semibold mb-4">Choose your desired table:</h2>
 
                         <div className="overflow-auto max-h-[calc(100vh-220px)]">
-                            <GridLayout
+                            <ClientViewGrid
                                 grid={gridData}
-                                readOnly={true}
+                                onTableClick={(rowIndex, colIndex) => {
+                                    setSelectedTable({ x: colIndex, y: rowIndex });
+                                }}
+                                getTableNumber={(rowIndex, colIndex) => getTableNumber({ x: colIndex, y: rowIndex })}
                             />
                         </div>
                     </div>

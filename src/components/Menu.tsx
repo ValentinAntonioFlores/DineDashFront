@@ -1,11 +1,9 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
 import {
-    CreateRestaurantCategory,
-    AddProductByRestaurant,
-    fetchProductsByRestaurant,
-    updateProductById,
-    deleteProductById
-} from "../utils/RestaurantApi.ts";
+    CreateRestaurantCategory, AddProductByRestaurant, fetchProductsByRestaurant, updateProductById,
+    deleteProductById } from "../utils/RestaurantApi.ts";
+import { Toaster, toast } from 'sonner';
+import { useConfirm } from "../components/ConfirmDialog.tsx";
 
 type Plate = {
     id: string;
@@ -27,7 +25,8 @@ const Menu: React.FC = () => {
     const [newDescription, setNewDescription] = useState("");
     const [newPrice, setNewPrice] = useState("");
     const [newCategory, setNewCategory] = useState(categories[0]);
-    const [newImageUrl, setNewImageUrl] = useState<string | null>(null);
+    const [newImageUrl, setNewImageUrl] = useState<string>("");
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     // Edit mode state
     const [editId, setEditId] = useState<string | null>(null);
@@ -38,7 +37,8 @@ const Menu: React.FC = () => {
         setNewDescription("");
         setNewPrice("");
         setNewCategory(categories[0]);
-        setNewImageUrl(null);
+        setNewImageUrl("");
+        setImageFile(null);
         setEditId(null);
         setShowAddForm(false);
     };
@@ -46,34 +46,69 @@ const Menu: React.FC = () => {
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setNewImageUrl(imageUrl);
+            setImageFile(file);
+
+            // Create preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setNewImageUrl(previewUrl);
         }
     };
 
+    const convertFileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                resolve(reader.result as string);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
     const addPlate = async () => {
-        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice))) {
-            alert("Please enter a valid name and price.");
+        if (!newName.trim()) {
+            toast.error("Name is required.");
+            return;
+        }
+        if (!newDescription.trim()) {
+            toast.error("Description is required.");
+            return;
+        }
+        if (!newPrice.trim() || isNaN(Number(newPrice)) || Number(newPrice) <= 0) {
+            toast.error("Please enter a valid positive number for the price.");
+            return;
+        }
+        if (!newCategory) {
+            toast.error("Category is required.");
             return;
         }
 
+
+
         const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
         if (!restaurantId) {
-            alert("Restaurant ID not found.");
+            toast.error("Restaurant ID not found.");
             return;
         }
 
         try {
+            // Create category first
             await CreateRestaurantCategory({
                 name: newCategory,
                 restaurantId: restaurantId
             });
 
+            // Convert image to base64 if file exists
+            let imageBase64 = "";
+            if (imageFile) {
+                imageBase64 = await convertFileToBase64(imageFile);
+            }
+
             const createdProduct = await AddProductByRestaurant({
                 name: newName.trim(),
                 description: newDescription.trim(),
                 price: Number(newPrice),
-                image: newImageUrl || "",
+                image: imageBase64,
                 category: newCategory,
                 restaurantUser: {
                     idRestaurante: restaurantId
@@ -95,7 +130,7 @@ const Menu: React.FC = () => {
             resetForm();
         } catch (error) {
             console.error("Error adding plate:", error);
-            alert("Something went wrong while adding the plate.");
+            toast.error("Something went wrong while adding the plate.");
         }
     };
 
@@ -106,34 +141,55 @@ const Menu: React.FC = () => {
         setNewPrice(plate.price.toString());
         setNewCategory(plate.category);
         setNewImageUrl(plate.imageUrl);
+        setImageFile(null); // Reset file input for edit mode
         setShowAddForm(true);
     };
 
     const saveEditPlate = async () => {
         if (!editId) return;
 
-        if (!newName.trim() || !newPrice.trim() || isNaN(Number(newPrice))) {
-            alert("Please enter a valid name and price.");
+        if (!newName.trim()) {
+            toast.error("Name is required.");
+            return;
+        }
+        if (!newDescription.trim()) {
+            toast.error("Description is required.");
+            return;
+        }
+        if (!newPrice.trim() || isNaN(Number(newPrice)) || Number(newPrice) <= 0) {
+            toast.error("Please enter a valid positive number for the price.");
+            return;
+        }
+        if (!newCategory) {
+            toast.error("Category is required.");
             return;
         }
 
+
         const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
         if (!restaurantId) {
-            alert("Restaurant ID not found.");
+            toast.error("Restaurant ID not found.");
             return;
         }
 
         try {
+            // Create category first
             await CreateRestaurantCategory({
                 name: newCategory,
                 restaurantId: restaurantId
             });
 
+            // Convert image to base64 if new file exists, otherwise keep existing image
+            let imageBase64 = newImageUrl;
+            if (imageFile) {
+                imageBase64 = await convertFileToBase64(imageFile);
+            }
+
             const updatedProduct = await updateProductById(editId, {
                 name: newName.trim(),
                 description: newDescription.trim(),
                 price: Number(newPrice),
-                image: newImageUrl || "",
+                image: imageBase64,
                 category: newCategory,
                 restaurantUser: {
                     idRestaurante: restaurantId
@@ -158,19 +214,23 @@ const Menu: React.FC = () => {
             resetForm();
         } catch (error) {
             console.error("Error updating plate:", error);
-            alert("Something went wrong while updating the plate.");
+            toast.error("Something went wrong while updating the plate.");
         }
     };
 
+    const confirm = useConfirm();
+
     const deletePlate = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this plate?")) return;
+        const confirmed = await confirm("Are you sure you want to delete this plate?");
+        if (!confirmed) return;
 
         try {
             await deleteProductById(id);
             setPlates((prev) => prev.filter((plate) => plate.id !== id));
+            toast.success("Plate deleted successfully.");
         } catch (error) {
             console.error("Error deleting plate:", error);
-            alert("Failed to delete plate.");
+            toast.error("Failed to delete plate.");
         }
     };
 
@@ -178,17 +238,13 @@ const Menu: React.FC = () => {
         const fetchProducts = async () => {
             const restaurantId = JSON.parse(localStorage.getItem("userInfo") || "{}")?.id;
             if (!restaurantId) {
-                alert("Restaurant ID not found.");
+                toast.error("Restaurant ID not found.");
                 return;
             }
 
             try {
                 const products = await fetchProductsByRestaurant(restaurantId);
-                const transformed = products.map((p) => ({
-                    ...p,
-                    imageUrl: p.imageUrl, // adjust if backend returns `image`
-                }));
-                setPlates(transformed);
+                setPlates(products);
             } catch (error) {
                 console.error("Error fetching products:", error);
             }
@@ -302,6 +358,7 @@ const Menu: React.FC = () => {
                     <input
                         type="number"
                         step="0.01"
+                        min="0"
                         placeholder="Price"
                         value={newPrice}
                         onChange={(e) => setNewPrice(e.target.value)}
@@ -320,16 +377,24 @@ const Menu: React.FC = () => {
                         ))}
                     </select>
 
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="mb-4"
-                    />
+                    <div className="mb-4">
+                        <label className="block text-sm font-serif italic mb-2">
+                            Image
+                        </label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="block w-full border border-black rounded p-2"
+                        />
+                    </div>
 
                     {newImageUrl && (
-                        <div className="mb-4 w-32 h-32 border border-black rounded overflow-hidden">
-                            <img src={newImageUrl} alt="Preview" className="object-cover w-full h-full" />
+                        <div className="mb-4">
+                            <p className="text-sm font-serif italic mb-2">Preview:</p>
+                            <div className="w-32 h-32 border border-black rounded overflow-hidden">
+                                <img src={newImageUrl} alt="Preview" className="object-cover w-full h-full" />
+                            </div>
                         </div>
                     )}
 

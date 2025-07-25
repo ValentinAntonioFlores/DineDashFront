@@ -12,6 +12,8 @@ import Menu from "../components/Menu.tsx";
 import Map from "../components/Map.tsx";
 import { Image, LayoutGrid, CalendarDays, Bell, Utensils, Map as MapIcon, LogOut, UserRound } from 'lucide-react';
 import RestaurantEmailNotificationToggle from "../components/RestaurantEmail.tsx"; // Import Lucide icons
+import { Toaster, toast } from 'sonner';
+
 
 const RestaurantHome: React.FC = () => {
     const [selectedSection, setSelectedSection] = useState<"image" | "layout" | "reservations" | "notifications" |"Email" | "menu" | "map" | "logout">("image");
@@ -117,40 +119,37 @@ const RestaurantHome: React.FC = () => {
 
     const saveCurrentGridLayout = async () => {
         if (!userInfo) {
-            alert("Error: User not logged in. Cannot save layout.");
+            toast.error("User not logged in. Cannot save layout.");
             return;
         }
         try {
             await saveGridLayout(userInfo.id, grid);
-            alert("Grid layout saved successfully!");
+            toast.success("Grid layout saved successfully!");
         } catch (error) {
             console.error("Error saving grid layout:", error);
-            alert("Failed to save grid layout.");
+            toast.error("Failed to save grid layout.");
         }
     };
 
     const saveRestaurantImage = async () => {
         if (!userInfo || !restaurantImage) {
-            console.error("Error: No user info or image to save.");
+            toast.error("No image or user info found.");
             return;
         }
 
         try {
             console.log("Saving image for restaurant:", userInfo.restaurantName);
-            console.log("Image data:", restaurantImage);
-
             const response = await saveRestaurant({
                 id: userInfo.id,
                 image: restaurantImage,
             });
-
-            console.log("Image save response:", response);
-            alert("Image saved successfully!");
+            toast.success("Image saved successfully!");
         } catch (err) {
             console.error("Error saving image", err);
-            alert("Failed to save image");
+            toast.error("Failed to save image.");
         }
     };
+
 
     const toggleCell = (row: number, col: number) => {
         setGrid((prevGrid) => {
@@ -264,6 +263,8 @@ const RestaurantHome: React.FC = () => {
                                         selectedSeats={selectedSeats}
                                         mode={mode}
                                         toggleCell={toggleCell}
+                                        setSelectedSeats={setSelectedSeats}
+                                        setMode={setMode}
                                     />
                                     <button
                                         onClick={saveCurrentGridLayout}

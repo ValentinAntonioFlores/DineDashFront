@@ -4,6 +4,8 @@ import "leaflet/dist/leaflet.css";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
 import { fetchClientUserLocation, updateClientUserLocation } from "../utils/Api";
+import { Toaster, toast } from 'sonner';
+
 
 type Location = {
     latitude: number;
@@ -169,9 +171,9 @@ const UserMap: React.FC = () => {
                 longitude: selectedLocation.longitude,
             });
             setConfirming(false);
-            alert("Location saved!");
+            toast.success("Location saved!");
         } catch (err) {
-            alert("Failed to save location.");
+            toast.error("Failed to save location.");
         }
     };
 

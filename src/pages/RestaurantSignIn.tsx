@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import SignInLayout from '../layouts/SignInLayout';
 import AuthInput from '../components/AuthInput';
 import { signInRestaurantUser } from '../utils/Api';
+import { Toaster, toast } from 'sonner';
+
 
 interface RestaurantSignInFormState {
     email: string;
@@ -40,7 +42,7 @@ const RestaurantSignIn: React.FC = () => {
         e.preventDefault();
 
         if (!formData.email || !formData.password) {
-            alert('Please fill in both fields.');
+            toast.error('Please fill in both fields.');
             return;
         }
 

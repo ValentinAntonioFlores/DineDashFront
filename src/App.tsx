@@ -12,12 +12,16 @@ import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
 import RestaurantCardLayout from "./layouts/RestaurantCardLayout.tsx";
 import SearchResults from "./components/SearchResults.tsx";
 import AllRestaurantsPage from "./components/AllRestaurantsPage.tsx";
+import { Toaster } from 'sonner';
+
 
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
     console.log('User authentication status:', isAuthenticated, localStorage.getItem('authToken')); // Log the authentication status
     return (
         <BrowserRouter>
+            <Toaster position="top-right" richColors />
+
             <Routes>
                 <Route
                     path="/"

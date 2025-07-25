@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signUpRestaurant } from "../utils/Api.ts";
 import AuthInput from '../components/AuthInput.tsx';
 import RestaurantSignUpLayout from '../layouts/RestaurantSignUpLayout';
+import { toast, Toaster } from 'sonner';  // <-- Import both toast and Toaster here
 
 interface SignUpFormState {
     restaurantName: string;
@@ -31,35 +32,47 @@ const SignUpRestaurantForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (formData.password !== formData.confirmPassword) {
-            console.error('Passwords do not match!');
+        const { restaurantName, email, password, confirmPassword } = formData;
+
+        if (!restaurantName || !email || !password || !confirmPassword) {
+            toast.error('Please fill in all fields.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            toast.error('Passwords do not match.');
             return;
         }
 
         const payload = {
-            restaurantName: formData.restaurantName,
-            email: formData.email,
-            password: formData.password
+            restaurantName,
+            email,
+            password
         };
 
         try {
             const result = await signUpRestaurant(payload);
 
-            // Check the response message from the backend
             if (result.message === 'Restaurant registered successfully.') {
-                console.log('Signup successful!');
-                navigate('/RestaurantSignIn'); // Redirect to the restaurant dashboard
+                toast.success('Signup successful!');
+                navigate('/RestaurantSignIn');
             } else {
-                console.error('Signup failed', result.message);
+                toast.error(`Signup failed: ${result.message}`);
             }
-        } catch (error) {
-            console.error('Error during signup:', error);
-            alert(error.message);  // Show an alert with the error message
+        } catch (error: any) {
+            if (error instanceof Error && error.message) {
+                toast.error(error.message);
+            } else {
+                toast.error('Unknown error during signup.');
+            }
         }
     };
 
     return (
         <RestaurantSignUpLayout>
+            {/* Place Toaster once per app or per page */}
+            <Toaster position="top-right" richColors />
+
             <form onSubmit={handleSubmit} className="w-full p-8 space-y-4">
                 <AuthInput
                     label="Restaurant Name"
