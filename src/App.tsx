@@ -7,6 +7,7 @@ import SignInForm from './pages/SignIn.tsx';
 import RestaurantSignIn from './pages/RestaurantSignIn.tsx';
 import RestaurantHome from './pages/RestaurantHome.tsx';
 import UserConfiguration from './pages/UserConfiguration.tsx';
+import ResetPasswordPage from "./components/ResetPassWordPage.tsx";
 import ProtectedRoutes from './components/ProtectedRoutes.tsx';
 import SignUpLayout from './layouts/SignUpUserRestaurantLayout.tsx';
 import RestaurantCardLayout from "./layouts/RestaurantCardLayout.tsx";
@@ -14,10 +15,10 @@ import SearchResults from "./components/SearchResults.tsx";
 import AllRestaurantsPage from "./components/AllRestaurantsPage.tsx";
 import { Toaster } from 'sonner';
 
-
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
     console.log('User authentication status:', isAuthenticated, localStorage.getItem('authToken')); // Log the authentication status
+
     return (
         <BrowserRouter>
             <Toaster position="top-right" richColors />
@@ -27,8 +28,8 @@ function App() {
                     path="/"
                     element={isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/signup" />}
                 />
+
                 {/* Public Routes */}
-                <Route path="/" element={<Navigate to="/signup" />} />
                 <Route path="/signup" element={<SignUpLayout />} />
                 <Route path="/Usersignup" element={<SignUpForm />} />
                 <Route path="/signin" element={<SignInForm />} />
@@ -37,7 +38,8 @@ function App() {
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/restaurants" element={<AllRestaurantsPage />} />
 
-
+                {/* Password Reset Route - Add this */}
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* Protected Routes */}
                 <Route

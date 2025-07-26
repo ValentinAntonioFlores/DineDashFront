@@ -248,6 +248,7 @@ export const makeReviewOnRestaurant = async (review: {
     userId: string;
     restaurantId: string;
     rating: number;
+    comment?: string;
 }) => {
     try {
         const response = await fetch('http://localhost:8000/reviews/client-to-restaurant', {
@@ -259,6 +260,7 @@ export const makeReviewOnRestaurant = async (review: {
                 clientId: review.userId,
                 restaurantId: review.restaurantId,
                 starRating: review.rating,
+                comment: review.comment || "",
             }),
         });
 
@@ -270,6 +272,8 @@ export const makeReviewOnRestaurant = async (review: {
         throw error;
     }
 };
+
+
 
 
 export const fetchReviewByClientAndRestaurant = async (clientId: string, restaurantId: string) => {
@@ -536,12 +540,96 @@ export const updateEmailNotifications = async (userId: string, enabled: boolean)
             throw new Error('Failed to update email notification setting');
         }
 
-        // No body expected — success is enough
+
     } catch (error) {
         console.error('Error updating email notification setting:', error);
         throw error;
     }
 };
+
+export interface Review {
+    id: string;
+    userFirstName: string;
+    userLastName: string;
+    comment: string;
+    starRating: number;
+}
+
+export const fetchReviewsForRestaurant = async (restaurantId: string) => {
+    const response = await fetch(`http://localhost:8000/reviews/restaurant/${restaurantId}/detailed-reviews`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch reviews');
+    }
+    return response.json();
+};
+
+export async function updateBackupEmail(userId: string, backupEmail: string, token: string) {
+    try {
+        const response = await fetch(`http://localhost:8000/clientUsers/${userId}/backup-email`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ backUpEmail: backupEmail }), // Use correct backend field name
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Failed to update backup email";
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData || errorMessage;
+            } catch {
+                errorMessage = response.statusText || errorMessage;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json(); // Returns EmailVerificationDTO
+    } catch (error) {
+        console.error("Error updating backup email:", error);
+        throw error;
+    }
+}
+
+export const getBackupEmail = async (userId: string, token: string) => {
+    try {
+        console.log("=== getBackupEmail API CALL ===");
+        console.log("UserID:", userId);
+        console.log("Token preview:", token ? token.substring(0, 20) + '...' : 'none');
+
+        const url = `http://localhost:8000/clientUsers/${userId}/backup-email`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Response error text:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ getBackupEmail response:", data);
+
+        // FIXED: Handle the backend field name correctly
+        return {
+            backupEmail: data.backUpEmail || data.backupEmail, // Handle both variants
+            isVerified: data.isVerified || false
+        };
+
+    } catch (error) {
+        console.error('❌ Error in getBackupEmail API call:', error);
+        throw error;
+    }
+};
+
+
 
 
 

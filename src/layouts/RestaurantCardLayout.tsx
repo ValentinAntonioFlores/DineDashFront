@@ -1,9 +1,8 @@
 // src/pages/RestaurantCardLayout.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import GridLayout from '../components/GridLayout.tsx';
 import CustomCalendar from '../components/Calendar.tsx';
-import {fetchAcceptedReservationsByRestaurant, fetchPublicRestaurants, makeReservation, markAsFavorite, unmarkAsFavorite, fetchUserFavoritesForHome} from "../utils/Api.ts";
+import {fetchAcceptedReservationsByRestaurant, fetchPublicRestaurants, makeReservation, markAsFavorite, unmarkAsFavorite, fetchUserFavoritesForHome, fetchReviewsForRestaurant} from "../utils/Api.ts";
 import HomeLayout from './HomeHeaderLayout.tsx';
 import { FaStar, FaRegStar} from 'react-icons/fa';
 import { ReservationReviewPopup } from '../components/ReservationReviewPopup'; // adjust the path if needed
@@ -11,7 +10,7 @@ import { ReviewButton} from "../components/ReviewButton.tsx";
 import UserMenu from "../components/UserMenu.tsx";
 import { Toaster, toast } from 'sonner';
 import ClientViewGrid from "../components/ClientViewGrid.tsx"; // Import the client view grid component
-
+import StickyReviews from '../components/StickyReview.tsx';
 
 
 // DTO interfaces
@@ -48,9 +47,6 @@ const formatDate = (date: Date) => {
 };
 
 
-
-
-
 const RestaurantCardLayout: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -65,6 +61,8 @@ const RestaurantCardLayout: React.FC = () => {
     const [selectedTime, setSelectedTime] = useState("");
     const [isFavorited, setIsFavorited] = useState(false);
     const [showReviewPopUp, setShowReviewPopUp] = useState(false);
+    const [reviews, setReviews] = useState<{ comment: string; reviewerName: string }[]>([]);
+
 
 
     const handleReviewSubmit = (rating: number, restaurantId: string) => {
@@ -75,6 +73,7 @@ const RestaurantCardLayout: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!id) return;
+
             try {
                 const all = await fetchPublicRestaurants();
                 const found = all.find(r => r.id === id);
@@ -82,20 +81,22 @@ const RestaurantCardLayout: React.FC = () => {
                 setRestaurant(found);
                 setError(null);
 
-                // Check if user has favorited this restaurant
                 const userInfoString = localStorage.getItem('userInfo');
                 if (userInfoString) {
                     const { id: userId } = JSON.parse(userInfoString);
                     const favorites = await fetchUserFavoritesForHome(userId);
-                    console.log("Favorites returned for user:", favorites);
-                    console.log("Current restaurant ID:", found.id);
                     setIsFavorited(favorites.includes(found.id));
                 } else {
-                    setIsFavorited(false); // no user, can't favorite
+                    setIsFavorited(false);
                 }
+
+                // ✅ Fetch reviews only after restaurant is confirmed
+                const fetchedReviews = await fetchReviewsForRestaurant(found.id);
+                setReviews(fetchedReviews);
             } catch (e: any) {
-                console.error(e);
+                console.error("Error fetching restaurant or reviews:", e);
                 setError(e.message || 'Unable to load restaurant');
+                setReviews([]); // fallback to empty
             } finally {
                 setLoading(false);
             }
@@ -103,6 +104,7 @@ const RestaurantCardLayout: React.FC = () => {
 
         fetchData();
     }, [id]);
+
 
 
     // State to track reserved tables
@@ -462,6 +464,11 @@ const RestaurantCardLayout: React.FC = () => {
             <div className="mt-4">
                 <UserMenu restaurantId={id ?? ''} />
             </div>
+
+
+            <StickyReviews reviews={reviews} />
+
+
 
             <ReviewButton onClick={() => setShowReviewPopUp(true)} />
 
