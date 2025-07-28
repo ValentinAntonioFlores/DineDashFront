@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SignUpLayoutProps {
     children: React.ReactNode;
@@ -7,12 +7,17 @@ interface SignUpLayoutProps {
 
 const RestaurantSignUpLayout: React.FC<SignUpLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleSignIn = () => {
-        navigate("/RestaurantSignIn"); // Navigate to user sign-in page
+        navigate("/RestaurantSignIn");
     };
 
-    if(localStorage.getItem("authToken")) {
+    // Evita la redirección automática en /oauth2/redirect
+    if (
+        localStorage.getItem("authToken") &&
+        location.pathname !== "/oauth2/redirect"
+    ) {
         const userInfo = localStorage.getItem("userInfo");
         if (userInfo) {
             const { userType } = JSON.parse(userInfo);

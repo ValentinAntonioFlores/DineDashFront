@@ -1,5 +1,5 @@
-// import { useNavigate } from 'react-router-dom'; // Router functionality removed for artifact
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import ForgotPasswordPopup from "../components/ForgotPassWordPopUp.tsx";
 
 interface SignInLayoutProps {
@@ -7,11 +7,27 @@ interface SignInLayoutProps {
 }
 
 const SignInLayout: React.FC<SignInLayoutProps> = ({ children }) => {
-    // const navigate = useNavigate(); // Router functionality removed for artifact
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+    const location = useLocation();
+
+    useEffect(() => {
+        if (
+            localStorage.getItem("authToken") &&
+            location.pathname !== "/oauth2/redirect"
+        ) {
+            const userInfo = localStorage.getItem("userInfo");
+            if (userInfo) {
+                const { userType } = JSON.parse(userInfo);
+                if (userType === 'restaurant') {
+                    window.location.href = '/restaurantHome';
+                } else {
+                    window.location.href = '/home';
+                }
+            }
+        }
+    }, [location.pathname]);
 
     const handleUserSignUp = () => {
-        // navigate("/signUp"); // Router functionality removed for artifact
         console.log("Navigate to sign up");
     };
 
@@ -23,18 +39,6 @@ const SignInLayout: React.FC<SignInLayoutProps> = ({ children }) => {
     const handleCloseForgotPassword = () => {
         setIsForgotPasswordOpen(false);
     };
-
-    if (localStorage.getItem("authToken")) {
-        const userInfo = localStorage.getItem("userInfo");
-        if (userInfo) {
-            const { userType } = JSON.parse(userInfo);
-            if (userType === 'restaurant') {
-                window.location.href = '/restaurantHome';
-            } else {
-                window.location.href = '/home';
-            }
-        }
-    }
 
     return (
         <>

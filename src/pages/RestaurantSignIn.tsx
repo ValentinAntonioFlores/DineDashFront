@@ -5,7 +5,6 @@ import AuthInput from '../components/AuthInput';
 import { signInRestaurantUser } from '../utils/Api';
 import { Toaster, toast } from 'sonner';
 
-
 interface RestaurantSignInFormState {
     email: string;
     password: string;
@@ -16,7 +15,7 @@ const RestaurantSignIn: React.FC = () => {
         email: '',
         password: '',
     });
-    // si hay token que me redirija a restaurantHome
+
     if(localStorage.getItem("authToken")) {
         const userInfo = localStorage.getItem("userInfo");
         if (userInfo) {
@@ -30,7 +29,6 @@ const RestaurantSignIn: React.FC = () => {
     }
 
     const [error, setError] = useState<string | null>(null);
-
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,27 +46,47 @@ const RestaurantSignIn: React.FC = () => {
 
         try {
             const response = await signInRestaurantUser(formData);
-            console.log('Login API full response:', response);
-
             const { token, restaurantName, email, idRestaurante, userType } = response;
-
-            // Store the token and user info
             localStorage.setItem('authToken', token);
-            // Store token and restaurant info in localStorage
-            const userInfo = { id: idRestaurante, restaurantName, email, token, userType }; // Include token
+            const userInfo = { id: idRestaurante, restaurantName, email, token, userType };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
-
-            console.log('Restaurant info stored:', userInfo);
-            navigate('/restaurantHome'); // No need to reload the page
+            navigate('/restaurantHome');
         } catch (error: any) {
-            setError(error?.message || 'An unexpected error occurred'); // Improved error handling
+            setError(error?.message || 'An unexpected error occurred');
         }
     };
 
+    // Botón Google
+    const handleGoogleSignIn = () => {
+        const params = new URLSearchParams({
+            user_type: "restaurant",
+            redirect_uri: window.location.origin + "/oauth2/redirect"
+        });
+        window.location.href = `http://localhost:8000/oauth2/authorization/google?${params.toString()}`;
+    };
 
     return (
         <SignInLayout>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md mx-auto mt-8">
+                <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    style={{
+                        background: "#fff",
+                        color: "#444",
+                        border: "1px solid #ddd",
+                        borderRadius: 4,
+                        padding: "8px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        cursor: "pointer",
+                        marginBottom: 12
+                    }}
+                >
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style={{ width: 20, height: 20 }} />
+                    Ingresar con Google
+                </button>
                 <AuthInput
                     label="Email"
                     name="email"

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SignInLayout from "../layouts/SignInLayout.tsx";
-import AuthInput from "../components/AuthInput.tsx";
-import { signIn } from "../utils/Api.ts";
+import SignInLayout from "../layouts/SignInLayout";
+import AuthInput from "../components/AuthInput";
+import { signIn } from "../utils/Api";
 
 interface SignInFormState {
     email: string;
@@ -15,7 +15,6 @@ const SignInForm: React.FC = () => {
         password: '',
     });
 
-    //si ya hay token, que me redirija a Home
     if (localStorage.getItem("authToken")) {
         const userInfo = localStorage.getItem("userInfo");
         if (userInfo) {
@@ -28,9 +27,7 @@ const SignInForm: React.FC = () => {
         }
     }
 
-
-    const [error, setError] = useState<string | null>(null);  // To display any login errors
-
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,35 +44,53 @@ const SignInForm: React.FC = () => {
         }
 
         try {
-            const response = await signIn(formData); // response now has token and user type
-            console.log("Login API full response:", response);
-
-            const { token, firstName, lastName, email, idUsuario, userType } = response;  // Assuming userType is included in the response
-
-            // Store the token and user info
+            const response = await signIn(formData);
+            const { token, firstName, lastName, email, idUsuario, userType } = response;
             localStorage.setItem('authToken', token);
             const userInfo = { id: idUsuario, firstName, lastName, email, userType };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
-
-            console.log("User info stored:", userInfo);
-
-            // Redirect based on user type
             if (userType === 'restaurant') {
                 navigate('/restaurantHome');
             } else {
                 navigate('/home');
             }
-
             window.location.reload();
         } catch (error: any) {
             setError(error.message);
         }
     };
 
+    // Botón Google
+    const handleGoogleSignIn = () => {
+        const params = new URLSearchParams({
+            user_type: "client",
+            redirect_uri: window.location.origin + "/oauth2/redirect"
+        });
+        window.location.href = `http://localhost:8000/oauth2/authorization/google?${params.toString()}`;
+    };
 
     return (
         <SignInLayout>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md mx-auto mt-8">
+                <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    style={{
+                        background: "#fff",
+                        color: "#444",
+                        border: "1px solid #ddd",
+                        borderRadius: 4,
+                        padding: "8px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        cursor: "pointer",
+                        marginBottom: 12
+                    }}
+                >
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style={{ width: 20, height: 20 }} />
+                    Ingresar con Google
+                </button>
                 <AuthInput
                     label="Email"
                     name="email"
@@ -90,6 +105,7 @@ const SignInForm: React.FC = () => {
                     value={formData.password}
                     onChange={handleChange}
                 />
+                {error && <p className="text-red-500 text-sm">{error}</p>}
                 <button
                     type="submit"
                     className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-full"

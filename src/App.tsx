@@ -14,6 +14,7 @@ import RestaurantCardLayout from "./layouts/RestaurantCardLayout.tsx";
 import SearchResults from "./components/SearchResults.tsx";
 import AllRestaurantsPage from "./components/AllRestaurantsPage.tsx";
 import { Toaster } from 'sonner';
+import OAuth2RedirectHandler from "./pages/0Auth2RedirectHandler.tsx";
 
 function App() {
     const isAuthenticated = !!localStorage.getItem('authToken'); // Check if user is authenticated
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/RestaurantSignIn" element={<RestaurantSignIn />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/restaurants" element={<AllRestaurantsPage />} />
+                <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
                 {/* Password Reset Route - Add this */}
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
