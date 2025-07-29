@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ForgotPasswordPopup from "../components/ForgotPassWordPopUp.tsx";
 
 interface SignInLayoutProps {
@@ -9,9 +9,10 @@ interface SignInLayoutProps {
 const SignInLayout: React.FC<SignInLayoutProps> = ({ children }) => {
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate(); // Add this hook
 
     useEffect(() => {
-        if (
+        if(
             localStorage.getItem("authToken") &&
             location.pathname !== "/oauth2/redirect"
         ) {
@@ -29,6 +30,7 @@ const SignInLayout: React.FC<SignInLayoutProps> = ({ children }) => {
 
     const handleUserSignUp = () => {
         console.log("Navigate to sign up");
+        navigate('/signup'); // Navigate to the signup page
     };
 
     const handleForgotPasswordClick = (e: React.MouseEvent) => {
@@ -47,10 +49,7 @@ const SignInLayout: React.FC<SignInLayoutProps> = ({ children }) => {
                     {/* Left Side - Sign In */}
                     <div className="w-1/2 p-10 flex flex-col justify-center">
                         <h2 className="text-3xl font-bold mb-4">Sign in</h2>
-                        <div className="flex gap-3 mb-6">
-                            <button className="border rounded-full w-10 h-10 flex items-center justify-center">G+</button>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-4">or use your account</p>
+
 
                         {children}
 

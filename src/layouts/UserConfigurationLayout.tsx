@@ -212,10 +212,7 @@ export const UserConfigurationLayout: React.FC<Props> = ({ formData, onChange, o
                 <nav className="space-y-3">
                     {[
                         {label: 'Profile Settings', icon: <User className="w-5 h-5"/>},
-                        {label: 'Account Info', icon: <Pencil className="w-5 h-5"/>},
                         {label: 'Email', icon: <Pencil className="w-5 h-5"/>},
-                        {label: 'Notifications', icon: <Bell className="w-5 h-5"/>},
-                        {label: 'Privacy', icon: <Shield className="w-5 h-5"/>},
                         {label: 'Reservations', icon: <CalendarCheck className="w-5 h-5"/>},
                         {label: 'My Location', icon: <MapPin className="w-5 h-5"/>}
                     ].map(({label, icon}) => (

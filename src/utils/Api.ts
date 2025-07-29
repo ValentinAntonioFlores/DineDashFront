@@ -1,21 +1,60 @@
 import axios from 'axios';
 
+// Create and configure axios instance
+const api = axios.create({
+    baseURL: 'http://localhost:8000',
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request interceptor to add JWT token automatically
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor to handle authentication errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userInfo');
+
+            // Only redirect if not already on signin page
+            if (!window.location.pathname.includes('/signin')) {
+                window.location.href = '/signin?error=SessionExpired';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Utility function to get auth headers (for fetch calls)
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('authToken');
+    return {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+    };
+};
+
+// AUTH FUNCTIONS
 export const signUp = async (payload: { firstName: string, lastName: string, email: string, password: string }) => {
     try {
-        const response = await fetch('http://localhost:8000/clientUsers/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to sign up');
-        }
-
-        const result = await response.json();
-        return result; // Assuming your backend returns the created user data or a success message
+        const response = await api.post('/clientUsers/register', payload);
+        return response.data;
     } catch (error) {
         console.error('Error signing up:', error);
         throw error;
@@ -23,175 +62,115 @@ export const signUp = async (payload: { firstName: string, lastName: string, ema
 };
 
 export async function signIn(data: { email: string; password: string }) {
-    const response = await axios.post('http://localhost:8000/clientUsers/login', data);
-
+    const response = await api.post('/clientUsers/login', data);
     const { token, firstName, lastName, email, idUsuario, userType } = response.data;
-
     return { token, firstName, lastName, email, idUsuario, userType };
 }
 
-
-
 export const signInRestaurantUser = async (data: { email: string; password: string }) => {
     try {
-        // Make the login request using axios
-        const response = await axios.post('http://localhost:8000/restaurantUsers/login', data, {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
+        const response = await api.post('/restaurantUsers/login', data);
         const { token, restaurantName, email, idRestaurante, imageBase64 } = response.data;
 
-        // Check if the response contains necessary data
         if (!token || !restaurantName || !email || !idRestaurante) {
             throw new Error('Invalid response structure from backend');
         }
 
-        // Store the token in localStorage
-        const userInfo = { id: idRestaurante, restaurantName, email, token };
+        // Store the token in authToken (consistent with your interceptors)
+        localStorage.setItem('authToken', token);
+
+        // Store user info WITHOUT the token to avoid duplication
+        const userInfo = {
+            id: idRestaurante,
+            restaurantName,
+            email,
+            userType: 'restaurant' // Add userType for consistency
+        };
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-        // Store token in axios default headers for subsequent requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-        return { token, restaurantName, email, idRestaurante, imageBase64 }; // Return the user data
+        return { token, restaurantName, email, idRestaurante, imageBase64, userType: 'restaurant' };
     } catch (error) {
-        if (error instanceof Error) {
-            console.error('Error during restaurant user sign-in:', error.message);
-        } else {
-            console.error('Unknown error during restaurant user sign-in:', error);
-        }
+        console.error('Error during restaurant user sign-in:', error);
         throw error;
     }
 };
 
+export const signUpRestaurant = async (payload: { restaurantName: string, email: string, password: string }) => {
+    try {
+        const response = await api.post('/restaurantUsers/register', payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error signing up restaurant:', error);
+        throw error;
+    }
+};
 
+// USER MANAGEMENT
 export const apiUpdateUser = async (
     id: string,
     data: { firstname: string; lastname: string; email: string; password?: string }
 ) => {
     try {
-        const token = localStorage.getItem('authToken'); // Get the token from localStorage
-
-        const response = await axios.put(`http://localhost:8000/clientUsers/${id}`, data, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '', // Add token to headers
-            },
-        });
-
-        if (response.status === 200) {
-            return response.data;
-        } else {
-            throw new Error('Failed to update user');
-        }
+        const response = await api.put(`/clientUsers/${id}`, data);
+        return response.data;
     } catch (error) {
         console.error('Error updating user:', error);
-
         if (axios.isAxiosError(error) && error.response) {
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
             throw new Error(error.response?.data?.message || 'Error occurred while updating user');
         }
-
         throw error;
     }
 };
 
-
-
-// utils/Api.ts
-export const signUpRestaurant = async (payload: { restaurantName: string, email: string, password: string }) => {
+export async function getUserById(userId: string): Promise<{ id: string; firstName: string; lastName: string; email: string } | null> {
     try {
-        const response = await fetch('http://localhost:8000/restaurantUsers/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.message);  // Throw error with the message from the backend
+        const response = await api.get(`/restaurants/client-info/${userId}`);
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.status === 404) {
+            return null;
         }
-
-        const result = await response.json();
-        return result; // Assuming your backend returns the created restaurant data or a success message
-    } catch (error) {
-        console.error('Error signing up:', error);
-        throw error;  // Ensure the error is thrown
+        console.error("Error fetching user by ID:", error);
+        throw error;
     }
-};
+}
 
+// RESTAURANT FUNCTIONS
 export const fetchPublicRestaurants = async () => {
     try {
-        const response = await axios.get(
-            "http://localhost:8000/restaurantUsers/public/restaurants",
-            {
-                headers: { Authorization: "" },  // clear the default
-            }
-        );
+        // This endpoint might be public, but we'll still use the configured instance
+        const response = await api.get('/restaurantUsers/public/restaurants');
         return response.data;
-    } catch (e) {
-        // if the backend still returns text, grab it:
-        if (axios.isAxiosError(e) && e.response) {
-            // e.response.data may be text
-            const text = typeof e.response.data === "string"
-                ? e.response.data
-                : JSON.stringify(e.response.data);
-            throw new Error(`HTTP ${e.response.status}: ${text}`);
-        }
-        throw e;
+    } catch (error) {
+        console.error('Error fetching public restaurants:', error);
+        throw error;
     }
 };
 
-
+// RESERVATION FUNCTIONS
 export const makeReservation = async (reservation: {
     userId: string;
     restaurantId: string;
-
     tableId: string;
     startTime: string;
     endTime: string;
     status: string;
 }) => {
     try {
-        const response = await fetch('http://localhost:8000/reservations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(reservation),
-        });
-
-        if (!response.ok) throw new Error("Failed to make reservation");
-
-        return await response.json();
+        const response = await api.post('/reservations', reservation);
+        return response.data;
     } catch (error) {
         console.error("Reservation error:", error);
         throw error;
     }
 };
 
-
 export const fetchUserReservations = async (userId: string) => {
     try {
-        const token = localStorage.getItem('authToken');
-
-        const response = await axios.post(
-            'http://localhost:8000/reservations/by-client-user',
-            { userId },
-            {
-                headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                },
-            }
-        );
+        const response = await api.post('/reservations/by-client-user', { userId });
 
         if (Array.isArray(response.data)) {
-            return response.data; // List of Reservation objects
+            return response.data;
         } else {
             console.warn('Unexpected reservations data:', response.data);
             return [];
@@ -206,44 +185,45 @@ export const fetchAcceptedReservationsByRestaurant = async (
     restaurantId: string,
     selectedStartTime: string,
     selectedEndTime: string
-): Promise<string[]> => {  // returns array of UUID strings
+): Promise<string[]> => {
     try {
-        const token = localStorage.getItem('authToken');
-
         const payload = {
             restaurantId,
             startTime: selectedStartTime,
             endTime: selectedEndTime,
         };
 
-        const response = await fetch('http://localhost:8000/reservations/reserved-tables', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: token ? `Bearer ${token}` : '',
-            },
-            body: JSON.stringify(payload),
-        });
+        const response = await api.post('/reservations/reserved-tables', payload);
 
-        if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.message || 'Failed to fetch reserved tables');
-        }
-
-        const reservedTableIds: string[] = await response.json();
-
-        if (!Array.isArray(reservedTableIds)) {
+        if (!Array.isArray(response.data)) {
             throw new Error('Unexpected response format: expected array of UUID strings');
         }
 
-        // The backend returns reserved table IDs only, no need to filter by status here
-        return reservedTableIds;
+        return response.data;
     } catch (error) {
         console.error('Error fetching reserved tables:', error);
         throw error;
     }
 };
 
+export const markNotificationsSeenByIds = async (reservationIds: string[]): Promise<boolean> => {
+    try {
+        const response = await api.post('/reservations/mark-notifications-seen-by-ids', reservationIds);
+
+        if (response.status === 200) {
+            console.log(`Notifications with IDs [${reservationIds.join(', ')}] marked as SEEN.`);
+            return true;
+        } else {
+            console.warn(`Unexpected response status ${response.status} when marking notifications seen by IDs.`);
+            return false;
+        }
+    } catch (error) {
+        console.error(`Error marking notifications seen by IDs:`, error);
+        throw error;
+    }
+};
+
+// REVIEW FUNCTIONS
 export const makeReviewOnRestaurant = async (review: {
     userId: string;
     restaurantId: string;
@@ -251,120 +231,31 @@ export const makeReviewOnRestaurant = async (review: {
     comment?: string;
 }) => {
     try {
-        const response = await fetch('http://localhost:8000/reviews/client-to-restaurant', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                clientId: review.userId,
-                restaurantId: review.restaurantId,
-                starRating: review.rating,
-                comment: review.comment || "",
-            }),
+        const response = await api.post('/reviews/client-to-restaurant', {
+            clientId: review.userId,
+            restaurantId: review.restaurantId,
+            starRating: review.rating,
+            comment: review.comment || "",
         });
-
-        if (!response.ok) throw new Error("Failed to make review");
-
-        return await response.json();
+        return response.data;
     } catch (error) {
         console.error("Review error:", error);
         throw error;
     }
 };
 
-
-
-
 export const fetchReviewByClientAndRestaurant = async (clientId: string, restaurantId: string) => {
     try {
-        const response = await fetch(`http://localhost:8000/reviews/client-to-restaurant?clientId=${clientId}&restaurantId=${restaurantId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (response.status === 404) {
+        const response = await api.get(`/reviews/client-to-restaurant?clientId=${clientId}&restaurantId=${restaurantId}`);
+        return response.data;
+    } catch (error: any) {
+        if (error.response?.status === 404) {
             return null; // no review found
         }
-        if (!response.ok) {
-            throw new Error('Failed to fetch review');
-        }
-
-        const review = await response.json();
-        return review;
-    } catch (error) {
         console.error("Error fetching review:", error);
         throw error;
     }
 };
-
-export const markAsFavorite = async (userId: string, restaurantId: string) => {
-    return fetch(`http://localhost:8000/favorites/mark?clientId=${userId}&restaurantId=${restaurantId}`, {
-        method: 'POST',
-    });
-};
-
-export const unmarkAsFavorite = async (userId: string, restaurantId: string) => {
-    return fetch(`http://localhost:8000/favorites/remove?clientId=${userId}&restaurantId=${restaurantId}`, {
-        method: 'DELETE',
-    });
-};
-
-type Favorite = {
-    restaurantUser: {
-        idRestaurante: string;
-    };
-};
-
-export async function fetchUserFavorites(userId: string): Promise<Favorite[]> {
-    const res = await fetch(`http://localhost:8000/favorites/${userId}`);
-    if (!res.ok) throw new Error("Failed to fetch favorites");
-
-    return await res.json();
-}
-
-export async function fetchUserFavoritesForHome(userId: string): Promise<string[]> {
-    type FavoriteDTO = {
-        restaurantId: string;
-    };
-    const res = await fetch(`http://localhost:8000/favorites/${userId}`);
-    if (!res.ok) throw new Error("Failed to fetch favorites");
-
-    const favorites: FavoriteDTO[] = await res.json();
-    console.log("Favorites received from backend:", favorites);
-    return favorites.map(f => f.restaurantId);
-}
-
-
-export async function getUserById(userId: string): Promise<{ id: string; firstName: string; lastName: string; email: string } | null> {
-    try {
-        const token = localStorage.getItem("token"); // Or wherever you store your auth token
-
-        const res = await fetch(`http://localhost:8000/restaurants/client-info/${userId}`, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-            }
-        });
-
-        if (res.status === 404) {
-            // User not found
-            return null;
-        }
-
-        if (!res.ok) {
-            throw new Error("Failed to fetch user");
-        }
-
-        return await res.json();
-    } catch (error) {
-        console.error("Error fetching user by ID:", error);
-        throw error;
-    }
-}
-
 
 export interface ReviewDTO {
     id: string;
@@ -374,7 +265,7 @@ export interface ReviewDTO {
     createdAt: string;
 }
 
-export const createRestaurantToClientReview = (
+export const createRestaurantToClientReview = async (
     clientId: string,
     restaurantId: string,
     isPositive: boolean
@@ -385,166 +276,8 @@ export const createRestaurantToClientReview = (
         isPositive: isPositive.toString(),
     });
 
-    return fetch(`http://localhost:8000/reviews/restaurant-to-client?${params.toString()}`, {
-        method: "POST",
-    })
-        .then((res) => {
-            if (!res.ok) throw new Error("Failed to create review");
-            return res.json();
-        });
-};
-
-export async function fetchCategories(): Promise<{ restaurantId: string; name: string }[]> {
-    const response = await fetch('http://localhost:8000/categories');
-    if (!response.ok) throw new Error("Failed to fetch categories");
-    return response.json();
-}
-
-export const getAverageRating = async (restaurantId: string): Promise<number> => {
-    try {
-        const response = await fetch(`http://localhost:8000/restaurant/${restaurantId}/average-rating`);
-        if (!response.ok) throw new Error("Failed to fetch average rating");
-        return await response.json();
-    } catch (error) {
-        console.error(error);
-        return 0;
-    }
-};
-
-export const updateClientUserLocation = async (
-    id: string,
-    locationData: { latitude: number; longitude: number }
-) => {
-    try {
-        const token = localStorage.getItem("authToken") || "";
-
-        const response = await axios.put(
-            `http://localhost:8000/clientUsers/${id}/location`,
-            locationData,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        console.log("Client user location updated:", response.data);
-        return response.data;
-    } catch (error) {
-        console.error("Error updating client user location:", error);
-        throw error;
-    }
-};
-
-
-export interface LocationDTO {
-    latitude: number;
-    longitude: number;
-}
-
-export const fetchClientUserLocation = async (
-    id: string
-): Promise<LocationDTO> => {
-    try {
-        const token = localStorage.getItem("authToken") || "";
-
-        const response = await axios.get<LocationDTO>(
-            `http://localhost:8000/clientUsers/${id}/getLocation`,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching client user location:", error);
-        throw error;
-    }
-};
-
-export const markNotificationsSeenByIds = async (reservationIds: string[]): Promise<boolean> => {
-    try {
-        const token = localStorage.getItem('authToken');
-
-        // This POST request correctly targets the new backend endpoint
-        // and sends an array of reservation IDs in the request body.
-        const response = await axios.post(
-            `http://localhost:8000/reservations/mark-notifications-seen-by-ids`, // Updated URL
-            reservationIds, // Sending the array of IDs in the request body
-            {
-                headers: {
-                    'Content-Type': 'application/json', // Crucial for sending a JSON array
-                    Authorization: token ? `Bearer ${token}` : '', // Include auth token if available
-                },
-            }
-        );
-
-        // The backend returns ResponseEntity<Void>, so we check the HTTP status code for success.
-        if (response.status === 200) {
-            console.log(`Notifications with IDs [${reservationIds.join(', ')}] marked as SEEN.`);
-            return true; // Indicate successful operation
-        } else {
-            console.warn(`Unexpected response status ${response.status} when marking notifications seen by IDs.`);
-            return false; // Indicate that the operation might not have been successful
-        }
-    } catch (error) {
-        console.error(`Error marking notifications seen by IDs:`, error);
-        throw error; // Re-throw the error for upstream error handling
-    }
-};
-
-export const getEmailNotifications = async (userId: string): Promise<boolean> => {
-    try {
-        const token = localStorage.getItem('authToken') || '';
-
-        const response = await fetch(`http://localhost:8000/clientUsers/${userId}/email-notifications`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch email notification status');
-        }
-
-        const result = await response.json(); // Should be a boolean
-        return result;
-    } catch (error) {
-        console.error('Error getting email notification setting:', error);
-        throw error;
-    }
-};
-
-export const updateEmailNotifications = async (userId: string, enabled: boolean): Promise<void> => {
-    try {
-        const token = localStorage.getItem('authToken') || '';
-
-        const response = await fetch(
-            `http://localhost:8000/clientUsers/${userId}/email-notifications?enabled=${enabled}`,
-            {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error('Failed to update email notification setting');
-        }
-
-
-    } catch (error) {
-        console.error('Error updating email notification setting:', error);
-        throw error;
-    }
+    const response = await api.post(`/reviews/restaurant-to-client?${params.toString()}`);
+    return response.data;
 };
 
 export interface Review {
@@ -555,37 +288,110 @@ export interface Review {
     starRating: number;
 }
 
-export const fetchReviewsForRestaurant = async (restaurantId: string) => {
-    const response = await fetch(`http://localhost:8000/reviews/restaurant/${restaurantId}/detailed-reviews`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch reviews');
-    }
-    return response.json();
+export const fetchReviewsForRestaurant = async (restaurantId: string): Promise<Review[]> => {
+    const response = await api.get(`/reviews/restaurant/${restaurantId}/detailed-reviews`);
+    return response.data;
 };
 
+export const getAverageRating = async (restaurantId: string): Promise<number> => {
+    try {
+        const response = await api.get(`/restaurant/${restaurantId}/average-rating`);
+        return response.data;
+    } catch (error) {
+        console.error(error);
+        return 0;
+    }
+};
+
+// FAVORITES FUNCTIONS
+export const markAsFavorite = async (userId: string, restaurantId: string) => {
+    const response = await api.post(`/favorites/mark?clientId=${userId}&restaurantId=${restaurantId}`);
+    return response;
+};
+
+export const unmarkAsFavorite = async (userId: string, restaurantId: string) => {
+    const response = await api.delete(`/favorites/remove?clientId=${userId}&restaurantId=${restaurantId}`);
+    return response;
+};
+
+type Favorite = {
+    restaurantUser: {
+        idRestaurante: string;
+    };
+};
+
+export async function fetchUserFavorites(userId: string): Promise<Favorite[]> {
+    const response = await api.get(`/favorites/${userId}`);
+    return response.data;
+}
+
+export async function fetchUserFavoritesForHome(userId: string): Promise<string[]> {
+    type FavoriteDTO = {
+        restaurantId: string;
+    };
+    const response = await api.get(`/favorites/${userId}`);
+    const favorites: FavoriteDTO[] = response.data;
+    console.log("Favorites received from backend:", favorites);
+    return favorites.map(f => f.restaurantId);
+}
+
+// LOCATION FUNCTIONS
+export interface LocationDTO {
+    latitude: number;
+    longitude: number;
+}
+
+export const updateClientUserLocation = async (
+    id: string,
+    locationData: { latitude: number; longitude: number }
+) => {
+    try {
+        const response = await api.put(`/clientUsers/${id}/location`, locationData);
+        console.log("Client user location updated:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating client user location:", error);
+        throw error;
+    }
+};
+
+export const fetchClientUserLocation = async (id: string): Promise<LocationDTO> => {
+    try {
+        const response = await api.get<LocationDTO>(`/clientUsers/${id}/getLocation`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching client user location:", error);
+        throw error;
+    }
+};
+
+// NOTIFICATION FUNCTIONS
+export const getEmailNotifications = async (userId: string): Promise<boolean> => {
+    try {
+        const response = await api.get(`/clientUsers/${userId}/email-notifications`);
+        return response.data;
+    } catch (error) {
+        console.error('Error getting email notification setting:', error);
+        throw error;
+    }
+};
+
+export const updateEmailNotifications = async (userId: string, enabled: boolean): Promise<void> => {
+    try {
+        await api.put(`/clientUsers/${userId}/email-notifications?enabled=${enabled}`);
+    } catch (error) {
+        console.error('Error updating email notification setting:', error);
+        throw error;
+    }
+};
+
+// BACKUP EMAIL FUNCTIONS
 export async function updateBackupEmail(userId: string, backupEmail: string, token: string) {
     try {
-        const response = await fetch(`http://localhost:8000/clientUsers/${userId}/backup-email`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ backUpEmail: backupEmail }), // Use correct backend field name
-        });
-
-        if (!response.ok) {
-            let errorMessage = "Failed to update backup email";
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData || errorMessage;
-            } catch {
-                errorMessage = response.statusText || errorMessage;
-            }
-            throw new Error(errorMessage);
-        }
-
-        return await response.json(); // Returns EmailVerificationDTO
+        const response = await api.put(`/clientUsers/${userId}/backup-email`,
+            { backUpEmail: backupEmail }
+        );
+        return response.data;
     } catch (error) {
         console.error("Error updating backup email:", error);
         throw error;
@@ -598,46 +404,26 @@ export const getBackupEmail = async (userId: string, token: string) => {
         console.log("UserID:", userId);
         console.log("Token preview:", token ? token.substring(0, 20) + '...' : 'none');
 
-        const url = `http://localhost:8000/clientUsers/${userId}/backup-email`;
+        const response = await api.get(`/clientUsers/${userId}/backup-email`);
+        const data = response.data;
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Response error text:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-
-        const data = await response.json();
         console.log("✅ getBackupEmail response:", data);
 
-        // FIXED: Handle the backend field name correctly
         return {
-            backupEmail: data.backUpEmail || data.backupEmail, // Handle both variants
+            backupEmail: data.backUpEmail || data.backupEmail,
             isVerified: data.isVerified || false
         };
-
     } catch (error) {
         console.error('❌ Error in getBackupEmail API call:', error);
         throw error;
     }
 };
 
+// CATEGORY FUNCTIONS
+export async function fetchCategories(): Promise<{ restaurantId: string; name: string }[]> {
+    const response = await api.get('/categories');
+    return response.data;
+}
 
-
-
-
-
-
-
-
-
-
-
-
+// Export the configured axios instance for direct use if needed
+export default api;
